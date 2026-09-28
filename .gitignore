@@ -22,3 +22,21 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# Maven
+target/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# SafeAgent local test files
+test.properties
+test-secret.properties
+
+# Secrets / local environment
+.env
+.env.*
+*.key
+*.pem
