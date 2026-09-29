@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.oasis.safeagent.service.PromptInjectionScannerService;
 import com.oasis.safeagent.service.SecretScannerService;
 
 @RestController
@@ -18,9 +19,14 @@ import com.oasis.safeagent.service.SecretScannerService;
 public class FileAnalysisController {
 
     private final SecretScannerService secretScannerService;
+    private final PromptInjectionScannerService promptInjectionScannerService;
 
-    public FileAnalysisController(SecretScannerService secretScannerService) {
+    public FileAnalysisController(
+            SecretScannerService secretScannerService,
+            PromptInjectionScannerService promptInjectionScannerService) {
+
         this.secretScannerService = secretScannerService;
+        this.promptInjectionScannerService = promptInjectionScannerService;
     }
 
     @PostMapping("/analyze")
@@ -35,14 +41,20 @@ public class FileAnalysisController {
         List<String> detectedSecrets =
                 secretScannerService.scan(content);
 
+        List<String> detectedPromptInjections =
+                promptInjectionScannerService.scan(content);
+
         String status =
-                detectedSecrets.isEmpty() ? "SAFE" : "BLOCKED";
+                detectedSecrets.isEmpty() && detectedPromptInjections.isEmpty()
+                        ? "SAFE"
+                        : "BLOCKED";
 
         return Map.of(
                 "fileName", file.getOriginalFilename(),
                 "size", file.getSize(),
                 "status", status,
-                "detectedSecrets", detectedSecrets
+                "detectedSecrets", detectedSecrets,
+                "detectedPromptInjections", detectedPromptInjections
         );
     }
 }

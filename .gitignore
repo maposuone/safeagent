@@ -40,3 +40,5 @@ test-secret.properties
 .env.*
 *.key
 *.pem
+
+test-injection.txt
