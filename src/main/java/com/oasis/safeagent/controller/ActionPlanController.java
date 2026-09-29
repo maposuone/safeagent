@@ -24,4 +24,11 @@ public class ActionPlanController {
 
         return actionPlanService.createPlan(request, content);
     }
+
+    @PostMapping("/evaluate")
+    public String evaluateAction(
+            @RequestParam String action) {
+
+        return actionPlanService.evaluateAction(action);
+    }
 }

@@ -6,9 +6,17 @@ import org.springframework.stereotype.Service;
 public class ActionPlanService {
 
     private final GeminiService geminiService;
+    private final SafetyGatewayService safetyGatewayService;
+    private final RiskAssessmentService riskAssessmentService;
 
-    public ActionPlanService(GeminiService geminiService) {
+    public ActionPlanService(
+            GeminiService geminiService,
+            SafetyGatewayService safetyGatewayService,
+            RiskAssessmentService riskAssessmentService) {
+
         this.geminiService = geminiService;
+        this.safetyGatewayService = safetyGatewayService;
+        this.riskAssessmentService = riskAssessmentService;
     }
 
     public String createPlan(String userRequest, String content) {
@@ -25,5 +33,12 @@ public class ActionPlanService {
                 + content;
 
         return geminiService.analyze(prompt);
+    }
+
+    public String evaluateAction(String action) {
+
+        String riskLevel = riskAssessmentService.assess(action);
+
+        return safetyGatewayService.evaluate(action, riskLevel);
     }
 }
