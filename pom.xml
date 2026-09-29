@@ -30,8 +30,14 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        <!-- Google Gemini / Vertex AI -->
+		<dependency>
+		    <groupId>com.google.genai</groupId>
+		    <artifactId>google-genai</artifactId>
+		    <version>1.4.1</version>
+		</dependency>
 
-        <!-- Test -->
+		<!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
