@@ -84,4 +84,8 @@ public class AgentDecisionService {
             default -> "NO_ACTION";
         };
     }
+    
+    public String analyzeContent(String prompt) {
+        return geminiService.analyze(prompt);
+    }
 }

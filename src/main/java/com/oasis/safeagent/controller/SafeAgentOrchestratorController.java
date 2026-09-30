@@ -78,4 +78,15 @@ public class SafeAgentOrchestratorController {
 
         return result;
     }
+    
+    @PostMapping("/run")
+    public Map<String, Object> run(
+            @RequestParam String request,
+            @RequestParam String content) {
+
+        return orchestratorService.runInitialFlow(
+                request,
+                content
+        );
+    }
 }
