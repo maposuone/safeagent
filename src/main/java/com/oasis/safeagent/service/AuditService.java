@@ -1,11 +1,16 @@
 package com.oasis.safeagent.service;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
 @Service
 public class AuditService {
+
+    private volatile Map<String, Object> latestAudit =
+            Map.of();
 
     public void record(
             String action,
@@ -15,18 +20,65 @@ public class AuditService {
             String executionResult,
             String evidenceResult) {
 
-        String log =
-                "{"
-                + "\"timestamp\":\"" + Instant.now() + "\","
-                + "\"action\":\"" + safe(action) + "\","
-                + "\"riskLevel\":\"" + safe(riskLevel) + "\","
-                + "\"decision\":\"" + safe(decision) + "\","
-                + "\"approvalStatus\":\"" + safe(approvalStatus) + "\","
-                + "\"executionResult\":\"" + safe(executionResult) + "\","
-                + "\"evidenceResult\":\"" + safe(evidenceResult) + "\""
-                + "}";
+        Map<String, Object> audit =
+                new LinkedHashMap<>();
 
-        System.out.println("[SAFEAGENT_AUDIT] " + log);
+        audit.put(
+                "timestamp",
+                Instant.now().toString()
+        );
+
+        audit.put(
+                "action",
+                safe(action)
+        );
+
+        audit.put(
+                "riskLevel",
+                safe(riskLevel)
+        );
+
+        audit.put(
+                "decision",
+                safe(decision)
+        );
+
+        audit.put(
+                "approvalStatus",
+                safe(approvalStatus)
+        );
+
+        audit.put(
+                "executionResult",
+                safe(executionResult)
+        );
+
+        audit.put(
+                "evidenceResult",
+                safe(evidenceResult)
+        );
+
+        /*
+         * デモ表示用に直近Auditを保持
+         */
+        latestAudit =
+                new LinkedHashMap<>(audit);
+
+        /*
+         * Cloud Runでは標準出力が
+         * Cloud Loggingへ送られる。
+         */
+        System.out.println(
+                "[SAFEAGENT_AUDIT] "
+                + toJson(audit)
+        );
+    }
+
+    public Map<String, Object> getLatestAudit() {
+
+        return new LinkedHashMap<>(
+                latestAudit
+        );
     }
 
     private String safe(String value) {
@@ -34,6 +86,46 @@ public class AuditService {
         if (value == null) {
             return "";
         }
+
+        return value;
+    }
+
+    private String toJson(
+            Map<String, Object> audit) {
+
+        StringBuilder json =
+                new StringBuilder("{");
+
+        boolean first = true;
+
+        for (Map.Entry<String, Object> entry
+                : audit.entrySet()) {
+
+            if (!first) {
+                json.append(",");
+            }
+
+            json.append("\"")
+                .append(escape(entry.getKey()))
+                .append("\":\"")
+                .append(
+                        escape(
+                                String.valueOf(
+                                        entry.getValue()
+                                )
+                        )
+                )
+                .append("\"");
+
+            first = false;
+        }
+
+        json.append("}");
+
+        return json.toString();
+    }
+
+    private String escape(String value) {
 
         return value
                 .replace("\\", "\\\\")
