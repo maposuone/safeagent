@@ -53,17 +53,36 @@ public class SafeAgentOrchestratorController {
 
     @PostMapping("/approve-and-execute")
     public Map<String, Object> approveAndExecute(
-            @RequestParam String filePath,
+            @RequestPart("file") MultipartFile file,
             @RequestParam String key,
             @RequestParam String newValue,
             @RequestParam String approvalStatus) throws Exception {
 
-        return orchestratorService.executeApprovedModification(
-                Path.of(filePath),
-                key,
-                newValue,
-                approvalStatus
+        Path savedPath =
+                toolExecutionService.saveFile(
+                        file.getOriginalFilename(),
+                        file.getBytes()
+                );
+
+        Map<String, Object> executionResult =
+                orchestratorService.executeApprovedModification(
+                        savedPath,
+                        key,
+                        newValue,
+                        approvalStatus
+                );
+
+        Map<String, Object> result =
+                new LinkedHashMap<>(
+                        executionResult
+                );
+
+        result.put(
+                "fileName",
+                file.getOriginalFilename()
         );
+
+        return result;
     }
 
     @PostMapping("/upload")
