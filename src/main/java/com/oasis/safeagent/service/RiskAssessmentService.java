@@ -12,11 +12,25 @@ public class RiskAssessmentService {
         }
 
         return switch (action.toUpperCase()) {
-            case "READ_CONFIG", "ANALYZE_CONFIG" -> "LOW";
-            case "COMPARE_CONFIG" -> "MEDIUM";
-            case "MODIFY_CONFIG" -> "HIGH";
-            case "DELETE_CONFIG" -> "CRITICAL";
-            default -> "CRITICAL";
-        };
+
+        case "NO_ACTION" ->
+            "LOW";
+
+        case "READ_CONFIG",
+             "ANALYZE_CONFIG" ->
+            "LOW";
+
+        case "COMPARE_CONFIG" ->
+            "MEDIUM";
+
+        case "MODIFY_CONFIG" ->
+            "HIGH";
+
+        case "DELETE_CONFIG" ->
+            "CRITICAL";
+
+        default ->
+            "CRITICAL";
+    };
     }
 }

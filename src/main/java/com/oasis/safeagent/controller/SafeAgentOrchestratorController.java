@@ -82,11 +82,35 @@ public class SafeAgentOrchestratorController {
     @PostMapping("/run")
     public Map<String, Object> run(
             @RequestParam String request,
-            @RequestParam String content) {
+            @RequestPart("file") MultipartFile file) throws Exception {
 
-        return orchestratorService.runInitialFlow(
-                request,
-                content
+        Path savedPath =
+                toolExecutionService.saveFile(
+                        file.getOriginalFilename(),
+                        file.getBytes()
+                );
+
+        String fileContent =
+                toolExecutionService.readConfig(
+                        savedPath
+                );
+
+        Map<String, Object> result =
+                orchestratorService.runInitialFlow(
+                        request,
+                        fileContent
+                );
+
+        result.put(
+                "fileName",
+                file.getOriginalFilename()
         );
+
+        result.put(
+                "savedPath",
+                savedPath.toString()
+        );
+
+        return result;
     }
 }
