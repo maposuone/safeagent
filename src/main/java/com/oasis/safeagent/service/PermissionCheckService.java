@@ -10,14 +10,19 @@ public class PermissionCheckService {
     private static final List<String> ALLOWED_ACTIONS = List.of(
             "READ_CONFIG",
             "ANALYZE_CONFIG",
-            "COMPARE_CONFIG"
+            "COMPARE_CONFIG",
+            "MODIFY_CONFIG",
+            "NO_ACTION"
     );
 
     public boolean isAllowed(String action) {
+
         if (action == null) {
             return false;
         }
 
-        return ALLOWED_ACTIONS.contains(action.toUpperCase());
+        return ALLOWED_ACTIONS.contains(
+                action.toUpperCase()
+        );
     }
 }

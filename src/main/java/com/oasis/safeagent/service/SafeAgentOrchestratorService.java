@@ -14,17 +14,21 @@ public class SafeAgentOrchestratorService {
     private final RiskAssessmentService riskAssessmentService;
     private final SafetyGatewayService safetyGatewayService;
     private final AgentExecutionService agentExecutionService;
+    
+    private final PermissionCheckService permissionCheckService;
 
     public SafeAgentOrchestratorService(
             AgentDecisionService agentDecisionService,
             RiskAssessmentService riskAssessmentService,
             SafetyGatewayService safetyGatewayService,
-            AgentExecutionService agentExecutionService) {
+            AgentExecutionService agentExecutionService,
+            PermissionCheckService permissionCheckService) {
 
         this.agentDecisionService = agentDecisionService;
         this.riskAssessmentService = riskAssessmentService;
         this.safetyGatewayService = safetyGatewayService;
         this.agentExecutionService = agentExecutionService;
+        this.permissionCheckService = permissionCheckService;
     }
 
     public Map<String, Object> decideAndEvaluate(
@@ -185,6 +189,34 @@ public class SafeAgentOrchestratorService {
                         null
                 );
 
+        boolean firstPermissionAllowed =
+                permissionCheckService.isAllowed(firstAction);
+
+        result.put(
+                "firstPermissionAllowed",
+                firstPermissionAllowed
+        );
+
+        if (!firstPermissionAllowed) {
+
+            result.put(
+                    "firstDecision",
+                    "BLOCK"
+            );
+
+            result.put(
+                    "status",
+                    "BLOCKED"
+            );
+
+            result.put(
+                    "message",
+                    "The action is not permitted."
+            );
+
+            return result;
+        }
+        
         String firstRisk =
                 riskAssessmentService.assess(firstAction);
 
@@ -292,6 +324,34 @@ public class SafeAgentOrchestratorService {
                         analysisResult
                 );
 
+        boolean secondPermissionAllowed =
+                permissionCheckService.isAllowed(secondAction);
+
+        result.put(
+                "secondPermissionAllowed",
+                secondPermissionAllowed
+        );
+
+        if (!secondPermissionAllowed) {
+
+            result.put(
+                    "secondDecision",
+                    "BLOCK"
+            );
+
+            result.put(
+                    "status",
+                    "BLOCKED"
+            );
+
+            result.put(
+                    "message",
+                    "The action is not permitted."
+            );
+
+            return result;
+        }
+        
         String secondRisk =
                 riskAssessmentService.assess(
                         secondAction
