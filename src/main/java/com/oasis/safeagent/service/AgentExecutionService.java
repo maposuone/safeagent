@@ -194,4 +194,100 @@ public class AgentExecutionService {
                 + " | EVIDENCE: "
                 + evidenceResult;
     }
+
+    /*
+     * 場所指定付き変更。
+     * 同じキーが複数存在しても LINE:n または XML selector で対象を特定する。
+     */
+    public String executeApprovedModification(
+            Path filePath,
+            String target,
+            String key,
+            String expectedCurrentValue,
+            String newValue,
+            String approvalStatus) throws IOException {
+
+        String action = "MODIFY_CONFIG";
+
+        String riskLevel =
+                riskAssessmentService.assess(action);
+
+        String decision =
+                safetyGatewayService.evaluate(
+                        action,
+                        riskLevel
+                );
+
+        if (!"APPROVAL_REQUIRED".equals(decision)) {
+            auditService.record(
+                    action,
+                    riskLevel,
+                    decision,
+                    approvalStatus,
+                    "EXECUTION_BLOCKED",
+                    "NOT_CHECKED"
+            );
+
+            return "EXECUTION_BLOCKED";
+        }
+
+        if (!"APPROVED".equals(approvalStatus)) {
+            auditService.record(
+                    action,
+                    riskLevel,
+                    decision,
+                    approvalStatus,
+                    "EXECUTION_REJECTED",
+                    "NOT_CHECKED"
+            );
+
+            return "EXECUTION_REJECTED";
+        }
+
+        String executionResult =
+                toolExecutionService.modifyConfigAtTarget(
+                        filePath,
+                        target,
+                        key,
+                        expectedCurrentValue,
+                        newValue
+                );
+
+        if (!executionResult.startsWith("MODIFIED:")) {
+            auditService.record(
+                    action,
+                    riskLevel,
+                    decision,
+                    approvalStatus,
+                    executionResult,
+                    "NOT_CHECKED"
+            );
+
+            return executionResult;
+        }
+
+        String evidenceResult =
+                toolExecutionService.verifyValueAtTarget(
+                        filePath,
+                        target,
+                        key,
+                        newValue
+                )
+                        ? "VERIFIED"
+                        : "UNVERIFIED";
+
+        auditService.record(
+                action,
+                riskLevel,
+                decision,
+                approvalStatus,
+                executionResult,
+                evidenceResult
+        );
+
+        return executionResult
+                + " | EVIDENCE: "
+                + evidenceResult;
+    }
+
 }

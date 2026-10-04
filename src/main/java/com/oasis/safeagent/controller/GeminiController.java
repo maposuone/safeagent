@@ -19,6 +19,6 @@ public class GeminiController {
     @GetMapping("/test")
     public String test() {
         return geminiService.analyze(
-                "You are the AI engine of SafeAgent. Reply only: SafeAgent Gemini connection OK");
+                "次の日本語だけを返してください：SafeAgentとGeminiの接続を確認しました。");
     }
 }

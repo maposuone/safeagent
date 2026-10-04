@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeAgent 設定ファイル手動修正</title>
+    <style>
+        body {
+            font-family: "Yu Gothic", "Meiryo", sans-serif;
+            max-width: 1400px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #f6f8fa;
+        }
+        .card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th { background: #f0f2f5; }
+        .table-scroll { overflow-x: auto; }
+        input[type="text"] {
+            width: 100%;
+            min-width: 180px;
+            box-sizing: border-box;
+            padding: 7px;
+        }
+        input[type="text"]:disabled {
+            background: #eee;
+            color: #777;
+        }
+        button {
+            padding: 10px 18px;
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        .selection-note { font-weight: bold; }
+        .status-ng { color: #a40000; font-weight: bold; }
+        .muted { color: #666; }
+        pre {
+            background: #111;
+            color: #eee;
+            padding: 16px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>設定ファイル手動修正</h1>
+    <p>
+        定数設計書に定義された設定内容をすべて表示しています。
+        修正したい項目を選択してください。チェックした行だけ「設定ファイル設定値」を編集できます。
+    </p>
+    <p id="fileInfo"></p>
+    <p class="selection-note">選択中：<span id="manualSelectionCount">0</span>件</p>
+
+    <div class="table-scroll">
+        <table>
+            <thead>
+            <tr>
+                <th>選択</th>
+                <th>状態</th>
+                <th>対象位置</th>
+                <th>設定項目</th>
+                <th>設計書設定値</th>
+                <th>設定ファイル設定値</th>
+                <th>理由</th>
+            </tr>
+            </thead>
+            <tbody id="manualEditBody"></tbody>
+        </table>
+    </div>
+
+    <p class="muted">
+        設計書の全項目を表示します。設定ファイルに対象項目が存在しない場合や対象位置を安全に特定できない場合は、修正不可として表示します。
+    </p>
+
+    <button onclick="executeManualEdit()">実行</button>
+    <button onclick="window.close()">キャンセル</button>
+</div>
+
+<div id="manualResultSection" class="card hidden">
+    <h2>実行結果</h2>
+    <pre id="manualResult"></pre>
+</div>
+
+<script src="manual-edit.js"></script>
+</body>
+</html>

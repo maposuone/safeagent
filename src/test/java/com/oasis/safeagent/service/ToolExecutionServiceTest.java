@@ -92,4 +92,132 @@ class ToolExecutionServiceTest {
                 )
         );
     }
+    @Test
+    void shouldModifyApacheStyleDirective() throws Exception {
+
+        ToolExecutionService service =
+                new ToolExecutionService();
+
+        String originalContent =
+                "Listen 80\n"
+                + "User nobody\n"
+                + "Group nobody\n";
+
+        Path filePath = service.saveFile(
+                "httpd.conf",
+                originalContent.getBytes(StandardCharsets.UTF_8)
+        );
+
+        String result = service.modifyConfig(
+                filePath,
+                "User",
+                "apache"
+        );
+
+        assertEquals(
+                "MODIFIED: User apache",
+                result
+        );
+
+        String after = service.readConfig(filePath);
+
+        assertTrue(after.contains("User apache"));
+        assertTrue(!after.contains("User=apache"));
+
+        assertTrue(
+                service.verifyValue(
+                        filePath,
+                        "User",
+                        "apache"
+                )
+        );
+    }
+
+    @Test
+    void shouldModifyXmlAttributeAndVerifyEvidence() throws Exception {
+
+        ToolExecutionService service =
+                new ToolExecutionService();
+
+        String originalContent =
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                + "<Server>\n"
+                + "  <Service>\n"
+                + "    <Engine>\n"
+                + "      <Host name=\"localhost\" autoDeploy=\"true\"/>\n"
+                + "    </Engine>\n"
+                + "  </Service>\n"
+                + "</Server>\n";
+
+        Path filePath = service.saveFile(
+                "server.xml",
+                originalContent.getBytes(StandardCharsets.UTF_8)
+        );
+
+        String selector =
+                "XML:/Server/Service/Engine/Host@autoDeploy";
+
+        assertTrue(
+                service.isUniqueEditableTarget(
+                        originalContent,
+                        selector
+                )
+        );
+
+        String result = service.modifyConfig(
+                filePath,
+                selector,
+                "false"
+        );
+
+        assertEquals(
+                "MODIFIED: XML:/Server/Service/Engine/Host@autoDeploy=false",
+                result
+        );
+
+        String after = service.readConfig(filePath);
+
+        assertTrue(after.contains("autoDeploy=\"false\""));
+
+        assertTrue(
+                service.verifyValue(
+                        filePath,
+                        selector,
+                        "false"
+                )
+        );
+
+        Path backupPath =
+                filePath.resolveSibling(
+                        filePath.getFileName().toString() + ".bak"
+                );
+
+        assertTrue(Files.exists(backupPath));
+        String backup = Files.readString(
+                backupPath,
+                StandardCharsets.UTF_8
+        );
+        assertTrue(backup.contains("autoDeploy=\"true\""));
+    }
+
+    @Test
+    void shouldRejectNonUniqueXmlTarget() {
+
+        ToolExecutionService service =
+                new ToolExecutionService();
+
+        String xml =
+                "<Server><Service><Engine>"
+                + "<Host autoDeploy=\"true\"/>"
+                + "<Host autoDeploy=\"true\"/>"
+                + "</Engine></Service></Server>";
+
+        assertTrue(
+                !service.isUniqueEditableTarget(
+                        xml,
+                        "XML:/Server/Service/Engine/Host@autoDeploy"
+                )
+        );
+    }
+
 }

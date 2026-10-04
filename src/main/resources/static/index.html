@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,21 +7,15 @@
 
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 900px;
+            font-family: "Yu Gothic", "Meiryo", sans-serif;
+            max-width: 1200px;
             margin: 40px auto;
             padding: 20px;
             background: #f6f8fa;
         }
 
-        h1 {
-            margin-bottom: 4px;
-        }
-
-        .subtitle {
-            color: #555;
-            margin-bottom: 30px;
-        }
+        h1 { margin-bottom: 4px; }
+        .subtitle { color: #555; margin-bottom: 30px; }
 
         .card {
             background: white;
@@ -31,7 +25,6 @@
             margin-bottom: 20px;
         }
 
-        textarea,
         input[type="text"],
         input[type="file"] {
             width: 100%;
@@ -41,14 +34,48 @@
             padding: 10px;
         }
 
-        textarea {
-            height: 90px;
+        .mode-area {
+            margin-top: 8px;
+            margin-bottom: 20px;
         }
 
-        button {
+        .mode-title {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .mode-option {
+            display: block;
+            margin: 8px 0;
+            cursor: pointer;
+        }
+
+        .mode-option input {
+            margin-right: 8px;
+        }
+
+        .mode-description {
+            color: #666;
+            font-size: 13px;
+            margin-left: 26px;
+        }
+
+        button,
+        .download-link {
             padding: 10px 18px;
             cursor: pointer;
             margin-right: 8px;
+        }
+
+        .download-link {
+            display: inline-block;
+            margin-top: 14px;
+            border: 1px solid #777;
+            border-radius: 4px;
+            background: #f7f7f7;
+            color: #111;
+            text-decoration: none;
         }
 
         pre {
@@ -60,9 +87,43 @@
             overflow-wrap: anywhere;
         }
 
-        .hidden {
-            display: none;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 14px;
         }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th { background: #f0f2f5; }
+
+        .table-scroll { overflow-x: auto; }
+        .selection-note { margin: 12px 0; font-weight: bold; }
+        .muted { color: #666; }
+
+        .environment-area {
+            margin-top: 4px;
+            margin-bottom: 18px;
+        }
+
+        .environment-area .environment-title {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .environment-area label {
+            margin-right: 24px;
+        }
+
+        .hidden { display: none; }
     </style>
 </head>
 
@@ -71,209 +132,179 @@
 <h1>SafeAgent</h1>
 
 <div class="subtitle">
-    Let AI act. Keep humans in control.
+    AIが設定を確認し、変更前に人が判断します。
 </div>
 
 <div class="card">
+    <h2>1. 確認したい内容</h2>
 
-    <h2>1. Request</h2>
+    <div class="mode-area">
+        <span class="mode-title">AIへの依頼</span>
 
-    <label>User Request</label>
+        <label class="mode-option">
+            <input type="radio" name="requestMode" value="EXPLAIN" checked>
+            設定内容を説明
+            <span class="mode-description">見る・理解する</span>
+        </label>
 
-    <textarea id="request">Check this configuration and safely fix problems if needed</textarea>
+        <label class="mode-option">
+            <input type="radio" name="requestMode" value="ANALYZE">
+            設定内容を確認・分析
+            <span class="mode-description">設計書と比較・問題発見する</span>
+        </label>
 
-    <label>Configuration File</label>
+        <label class="mode-option">
+            <input type="radio" name="requestMode" value="FIX">
+            設定内容を確認・修正
+            <span class="mode-description">比較・承認・変更する</span>
+        </label>
+    </div>
 
-    <input
-            type="file"
-            id="file">
+    <label>設定ファイル</label>
+    <input type="file" id="file">
 
-    <button onclick="runAgent()">
-        Run SafeAgent
-    </button>
+    <label>定数設計書 <span class="muted">（ANALYZE / FIXでは必須）</span></label>
+    <input type="file" id="designFile" accept=".xlsx">
 
+    <div class="environment-area">
+        <span class="environment-title">対象環境</span>
+
+        <label>
+            <input type="radio" name="environment" value="PROD" checked>
+            本番環境
+        </label>
+
+        <label>
+            <input type="radio" name="environment" value="TEST">
+            テスト環境
+        </label>
+    </div>
+
+    <div id="modeRequirement" class="muted">
+        EXPLAIN：設定ファイルだけで実行できます。
+    </div>
+
+    <button onclick="runAgent()">確認を開始する</button>
 </div>
 
 <div class="card">
+    <h2>2. 確認結果</h2>
 
-    <h2>2. Agent Result</h2>
+    <pre id="result" aria-live="polite">ファイルと定数設計書を選び、「確認を開始する」を押してください。</pre>
 
-    <pre id="result">
-Waiting for request...
-    </pre>
+    <div id="designComparisonMessage" class="hidden"></div>
 
+    <div id="designDifferencesSection" class="hidden">
+        <h3>定数設計書との不一致：<span id="designDifferenceCount">0</span>件</h3>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>差異種別</th>
+                    <th>対象位置／パス</th>
+                    <th>設定項目名</th>
+                    <th>実設定値</th>
+                    <th>設計値</th>
+                    <th>確認内容</th>
+                </tr>
+                </thead>
+                <tbody id="designDifferencesBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="findingsSection" class="hidden">
+        <h3>検出した問題：<span id="findingCount">0</span>件</h3>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>問題点</th>
+                    <th>現在の設定</th>
+                    <th>変更案</th>
+                    <th>理由</th>
+                    <th>自動変更</th>
+                </tr>
+                </thead>
+                <tbody id="findingsBody"></tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-<div
-        id="approvalSection"
-        class="card hidden">
-
-    <h2>3. Human Approval</h2>
+<div id="approvalSection" class="card hidden">
+    <h2>3. 変更内容の確認</h2>
 
     <p>
-        SafeAgent detected a high-risk configuration change.
+        AIが検出した変更候補を表示しています。
+        同じ設定項目が複数あっても対象位置で区別します。変更したい項目を最大5件まで選択してください。
     </p>
 
-    <label>Key</label>
+    <p class="selection-note">
+        選択中：<span id="selectionCount">0</span>件 / 最大5件
+    </p>
 
-    <input
-            type="text"
-            id="key"
-            value="logging.level.root">
+    <div class="table-scroll">
+        <table>
+            <thead>
+            <tr>
+                <th>選択</th>
+                <th>問題点</th>
+                <th>対象位置</th>
+                <th>現在の設定</th>
+                <th>変更する設定項目</th>
+                <th>現在の値</th>
+                <th>変更後の値</th>
+                <th>理由</th>
+            </tr>
+            </thead>
+            <tbody id="approvalChangesBody"></tbody>
+        </table>
+    </div>
 
-    <label>New Value</label>
+    <p class="muted">
+        問題と変更候補は全件表示します。1回の承認で実行できる変更は最大5件です。
+    </p>
 
-    <input
-            type="text"
-            id="newValue"
-            value="INFO">
-
-    <button onclick="approve()">
-        Approve
-    </button>
-
+    <button onclick="approve()">選択した項目を変更する</button>
 </div>
 
-<div
-        id="executionSection"
-        class="card hidden">
+<div id="executionSection" class="card hidden">
+    <h2>4. 変更結果と確認結果</h2>
 
-    <h2>4. Execution / Evidence</h2>
+    <pre id="executionResult" aria-live="polite"></pre>
 
-    <pre id="executionResult"></pre>
+    <div id="executionChangesSection" class="hidden">
+        <div class="table-scroll">
+            <table>
+                <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>対象位置</th>
+                    <th>変更した設定項目</th>
+                    <th>変更後の値</th>
+                    <th>実行結果</th>
+                    <th>Evidence</th>
+                </tr>
+                </thead>
+                <tbody id="executionChangesBody"></tbody>
+            </table>
+        </div>
+    </div>
 
+    <div id="downloadSection" class="hidden">
+        <p>選択した変更を実ファイルで確認できました。修正済みファイルを保存できます。</p>
+        <a id="downloadLink" class="download-link">修正済みファイルをダウンロード</a>
+    </div>
 </div>
 
-<script>
+<div class="card">
+    <h2>5. 作業履歴</h2>
+    <button onclick="loadAudit()">作業履歴を表示する</button>
+</div>
 
-let selectedFile = null;
-
-async function runAgent() {
-
-    selectedFile =
-        document.getElementById("file").files[0];
-
-    const request =
-        document.getElementById("request").value;
-
-    if (!selectedFile) {
-
-        alert("Please select a configuration file.");
-
-        return;
-    }
-
-    const formData = new FormData();
-
-    formData.append(
-        "request",
-        request
-    );
-
-    formData.append(
-        "file",
-        selectedFile
-    );
-
-    document.getElementById("result").textContent =
-        "SafeAgent is analyzing...";
-
-    const response =
-        await fetch(
-            "/api/safeagent/run",
-            {
-                method: "POST",
-                body: formData
-            }
-        );
-
-    const data =
-        await response.json();
-
-    document.getElementById("result").textContent =
-        JSON.stringify(
-            data,
-            null,
-            2
-        );
-
-    if (data.status === "WAITING_FOR_APPROVAL") {
-
-        document
-            .getElementById("approvalSection")
-            .classList.remove("hidden");
-
-    } else {
-
-        document
-            .getElementById("approvalSection")
-            .classList.add("hidden");
-    }
-}
-
-async function approve() {
-
-    if (!selectedFile) {
-
-        alert("Configuration file is missing.");
-
-        return;
-    }
-
-    const key =
-        document.getElementById("key").value;
-
-    const newValue =
-        document.getElementById("newValue").value;
-
-    const formData =
-        new FormData();
-
-    formData.append(
-        "file",
-        selectedFile
-    );
-
-    formData.append(
-        "key",
-        key
-    );
-
-    formData.append(
-        "newValue",
-        newValue
-    );
-
-    formData.append(
-        "approvalStatus",
-        "APPROVED"
-    );
-
-    const response =
-        await fetch(
-            "/api/safeagent/approve-and-execute",
-            {
-                method: "POST",
-                body: formData
-            }
-        );
-
-    const data =
-        await response.json();
-
-    document
-        .getElementById("executionSection")
-        .classList.remove("hidden");
-
-    document.getElementById("executionResult").textContent =
-        JSON.stringify(
-            data,
-            null,
-            2
-        );
-}
-
-</script>
-
+<script src="app.js"></script>
 </body>
 </html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>SafeAgent 作業履歴</title>
+
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 30px;
+        }
+
+        h1 {
+            font-size: 24px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+
+        th,
+        td {
+            border: 1px solid #777;
+            padding: 7px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f0f0f0;
+        }
+
+        .pagination {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .pagination button {
+            margin: 0 4px;
+            min-width: 45px;
+            padding: 7px 12px;
+        }
+
+        #pageInfo {
+            display: inline-block;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .close-area {
+            margin-top: 30px;
+            text-align: right;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>作業履歴</h1>
+
+<table>
+    <thead>
+    <tr>
+        <th>run_id</th>
+        <th>記録日時</th>
+        <th>ファイル名</th>
+        <th>依頼内容</th>
+        <th>モード</th>
+        <th>操作内容</th>
+        <th>危険度</th>
+        <th>安全確認の結果</th>
+        <th>承認状況</th>
+        <th>実行結果</th>
+        <th>変更結果の確認</th>
+    </tr>
+    </thead>
+
+    <tbody id="historyBody">
+    </tbody>
+</table>
+
+<div class="pagination">
+
+    <button id="firstButton">&lt;&lt;</button>
+
+    <button id="prevButton">&lt;</button>
+
+    <span id="pageInfo">
+        0 - 0 / 0
+    </span>
+
+    <button id="nextButton">&gt;</button>
+
+    <button id="lastButton">&gt;&gt;</button>
+
+</div>
+
+<div class="close-area">
+    <button onclick="window.close()">
+        閉じる
+    </button>
+</div>
+
+<script src="/history.js"></script>
+
+</body>
+</html>
