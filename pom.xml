@@ -43,6 +43,12 @@
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
 
+		<dependency>
+		    <groupId>com.google.cloud.sql</groupId>
+		    <artifactId>postgres-socket-factory</artifactId>
+		    <version>1.30.0</version>
+		</dependency>
+
         <!-- PostgreSQL -->
         <dependency>
             <groupId>org.postgresql</groupId>
