@@ -119,6 +119,120 @@ let currentRunId = null;
 let currentProposedChanges = [];
 let downloadObjectUrl = null;
 let busy = false;
+let currentManualEditCandidates = [];
+let currentFileContent = '';
+let currentRequestMode = 'EXPLAIN';
+
+
+function setText(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
+}
+
+function resetDashboardMetrics() {
+    setText('metricDifferences', '0');
+    setText('metricAuto', '0');
+    setText('metricManual', '0');
+    setText('metricStatus', '未実行');
+
+    const statusCard = document.getElementById('metricStatusCard');
+    if (statusCard) {
+        statusCard.classList.remove('metric-ok', 'metric-ng');
+    }
+
+    const manualButton = document.getElementById('manualEditButton');
+    if (manualButton) manualButton.classList.add('hidden');
+}
+
+function updateDashboardMetrics(data) {
+    const differences = Array.isArray(data?.designDifferences)
+        ? data.designDifferences.length
+        : Number(data?.designDifferenceCount || 0);
+
+    const autoChanges = Array.isArray(data?.proposedChanges)
+        ? data.proposedChanges.length
+        : Number(data?.proposedChangeCount || 0);
+
+    const manualCount = Array.isArray(data?.manualEditCandidates)
+        ? data.manualEditCandidates.length
+        : Number(data?.manualEditCandidateCount || 0);
+
+    setText('metricDifferences', String(differences));
+    setText('metricAuto', String(autoChanges));
+    setText('metricManual', String(manualCount));
+
+    const comparison = data?.designComparisonStatus || 'NOT_APPLICABLE';
+    const statusText = comparison === 'MATCH'
+        ? '一致'
+        : comparison === 'MISMATCH'
+            ? '差異あり'
+            : '対象外';
+
+    setText('metricStatus', statusText);
+
+    const statusCard = document.getElementById('metricStatusCard');
+    if (statusCard) {
+        statusCard.classList.remove('metric-ok', 'metric-ng');
+        if (comparison === 'MATCH') statusCard.classList.add('metric-ok');
+        if (comparison === 'MISMATCH') statusCard.classList.add('metric-ng');
+    }
+
+    const manualButton = document.getElementById('manualEditButton');
+    if (manualButton) {
+        const canOpen =
+            currentRequestMode === 'FIX'
+            && currentRunId
+            && manualCount > 0;
+
+        manualButton.classList.toggle('hidden', !canOpen);
+    }
+}
+
+function updateFileLabel(inputId, labelId, emptyText) {
+    const input = document.getElementById(inputId);
+    const label = document.getElementById(labelId);
+    if (!input || !label) return;
+
+    const file = input.files?.[0];
+    label.textContent = file ? file.name : emptyText;
+    label.classList.toggle('has-file', Boolean(file));
+}
+
+function scrollToSection(id) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function openManualEdit() {
+    if (currentRequestMode !== 'FIX') {
+        alert('手動修正はFIXモードで利用してください。');
+        return;
+    }
+
+    if (!currentRunId || !selectedFile || currentManualEditCandidates.length === 0) {
+        alert('先にFIXモードで設定ファイルを確認してください。');
+        return;
+    }
+
+    window.open(
+        '/manual-edit.html',
+        'safeagent-manual-edit',
+        'width=1500,height=850,resizable=yes,scrollbars=yes'
+    );
+}
+
+function getManualEditPayload() {
+    return {
+        runId: currentRunId,
+        fileName: selectedFile?.name || '',
+        fileContent: currentFileContent,
+        candidates: currentManualEditCandidates
+    };
+}
+
+window.getManualEditPayload = getManualEditPayload;
 
 function resetDownload() {
     const section = document.getElementById('downloadSection');
@@ -371,6 +485,10 @@ async function runAgent() {
     selectedFile = null;
     currentRunId = null;
     currentProposedChanges = [];
+    currentManualEditCandidates = [];
+    currentFileContent = '';
+    currentRequestMode = requestMode;
+    resetDashboardMetrics();
     resetDownload();
     clearFindings();
     clearDesignDifferences();
@@ -381,6 +499,8 @@ async function runAgent() {
     document.getElementById('executionChangesSection').classList.add('hidden');
     document.getElementById('executionResult').textContent = '';
     document.getElementById('result').textContent = '設定ファイルを確認しています。しばらくお待ちください。';
+
+    currentFileContent = await file.text();
 
     const formData = new FormData();
     formData.append('requestMode', requestMode);
@@ -400,9 +520,18 @@ async function runAgent() {
         const data = await requestJson('/api/safeagent/run', { method: 'POST', body: formData });
 
         currentRunId = data.runId || null;
+        currentManualEditCandidates = Array.isArray(data.manualEditCandidates)
+            ? data.manualEditCandidates
+            : [];
+
+        if (requestMode === 'FIX') {
+            selectedFile = file;
+        }
+
         document.getElementById('result').textContent = formatResult(data);
         renderFindings(data.findings || []);
         renderDesignDifferences(data.designDifferences || []);
+        updateDashboardMetrics(data);
 
         if (requestMode === 'FIX' && data.status === 'WAITING_FOR_APPROVAL') {
             const proposedChanges = Array.isArray(data.proposedChanges)
@@ -410,14 +539,12 @@ async function runAgent() {
                 : [];
 
             if (proposedChanges.length === 0) {
-                selectedFile = null;
                 document.getElementById('approvalSection').classList.add('hidden');
                 document.getElementById('result').textContent +=
                     '\n\n安全に自動変更できる候補がありません。';
                 return;
             }
 
-            selectedFile = file;
             renderApprovalChanges(proposedChanges);
             document.getElementById('approvalSection').classList.remove('hidden');
         }
@@ -490,6 +617,10 @@ async function approve() {
         selectedFile = null;
         currentRunId = null;
         currentProposedChanges = [];
+        currentManualEditCandidates = [];
+        currentFileContent = '';
+        const manualButton = document.getElementById('manualEditButton');
+        if (manualButton) manualButton.classList.add('hidden');
 
     } catch (error) {
         showError('executionResult', error);
@@ -500,6 +631,10 @@ async function approve() {
         selectedFile = null;
         currentRunId = null;
         currentProposedChanges = [];
+        currentManualEditCandidates = [];
+        currentFileContent = '';
+        const manualButton = document.getElementById('manualEditButton');
+        if (manualButton) manualButton.classList.add('hidden');
     } finally {
         setBusy(false);
     }
@@ -521,27 +656,39 @@ function updateModeRequirement() {
     const message =
         document.getElementById('modeRequirement');
 
-    if (!message) return;
+    const designFile = document.getElementById('designFile');
+    const environmentRadios =
+        document.querySelectorAll('input[name="environment"]');
 
-    switch (requestMode) {
-        case 'EXPLAIN':
+    currentRequestMode = requestMode || 'EXPLAIN';
+
+    if (requestMode === 'EXPLAIN') {
+        if (message) {
             message.textContent =
-                'EXPLAIN：設定ファイルだけで実行できます。変更は行いません。';
-            break;
-
-        case 'ANALYZE':
+                '設定ファイルの内容をAIが分かりやすく説明します。変更は行いません。';
+        }
+        if (designFile) designFile.disabled = true;
+        environmentRadios.forEach(radio => radio.disabled = true);
+    } else if (requestMode === 'ANALYZE') {
+        if (message) {
             message.textContent =
-                'ANALYZE：設定ファイルと定数設計書を比較し、差異・問題点を表示します。変更は行いません。';
-            break;
-
-        case 'FIX':
+                '定数設計書と比較して、差異・問題点を確認します。変更は行いません。';
+        }
+        if (designFile) designFile.disabled = false;
+        environmentRadios.forEach(radio => radio.disabled = false);
+    } else if (requestMode === 'FIX') {
+        if (message) {
             message.textContent =
-                'FIX：設定ファイルと定数設計書を比較し、修正候補を表示します。変更には承認が必要です。';
-            break;
-
-        default:
-            message.textContent = '';
+                '定数設計書と比較して修正候補を提示し、承認された変更だけを実行します。';
+        }
+        if (designFile) designFile.disabled = false;
+        environmentRadios.forEach(radio => radio.disabled = false);
     }
+
+    document.querySelectorAll('.mode-card').forEach(card => {
+        const radio = card.querySelector('input[type="radio"]');
+        card.classList.toggle('selected', Boolean(radio?.checked));
+    });
 }
 
 document.querySelectorAll(
@@ -553,4 +700,13 @@ document.querySelectorAll(
     );
 });
 
+document.getElementById('file')?.addEventListener('change', () => {
+    updateFileLabel('file', 'configFileName', '設定ファイルを選択');
+});
+
+document.getElementById('designFile')?.addEventListener('change', () => {
+    updateFileLabel('designFile', 'designFileName', '定数設計書を選択');
+});
+
+resetDashboardMetrics();
 updateModeRequirement();

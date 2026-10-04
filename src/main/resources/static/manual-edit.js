@@ -17,8 +17,8 @@ function loadPayload() {
         }
 
         document.getElementById('fileInfo').textContent =
-            '対象ファイル：' + payload.fileName
-            + ' / runId：' + payload.runId;
+            '▤  対象ファイル：' + payload.fileName
+            + '   /   runId：' + payload.runId;
 
         renderCandidates(payload.candidates || []);
 
@@ -34,6 +34,9 @@ function renderCandidates(candidates) {
 
     candidates.forEach((item, index) => {
         const row = document.createElement('tr');
+        if (item.type === 'VALUE_MISMATCH') {
+            row.dataset.status = 'mismatch';
+        }
 
         const selectCell = document.createElement('td');
         const checkbox = document.createElement('input');
@@ -46,6 +49,7 @@ function renderCandidates(candidates) {
         row.appendChild(selectCell);
 
         const statusCell = document.createElement('td');
+
         const typeLabel = {
             MATCH: '一致',
             VALUE_MISMATCH: '不一致',
@@ -54,8 +58,31 @@ function renderCandidates(candidates) {
             INVALID_XML_TARGET: '対象特定不可',
             UNSUPPORTED_FORMAT: '形式未対応'
         }[item.type] || (item.type || '-');
-        statusCell.textContent = typeLabel + ' / ' + (item.editable ? '修正可能' : '修正不可');
-        if (!item.editable || item.type === 'VALUE_MISMATCH') statusCell.className = 'status-ng';
+
+        const status = document.createElement('span');
+        const editableText = item.editable ? '修正可能' : '修正不可';
+
+        if (!item.editable) {
+            status.className = 'status-chip status-disabled';
+        } else if (item.type === 'VALUE_MISMATCH') {
+            status.className = 'status-chip status-ng';
+        } else {
+            status.className = 'status-chip status-ok';
+        }
+
+        const icon = document.createElement('span');
+        icon.className = 'status-icon';
+        icon.textContent =
+            !item.editable ? '−'
+            : item.type === 'VALUE_MISMATCH' ? '!'
+            : '✓';
+
+        const label = document.createElement('span');
+        label.textContent = typeLabel + ' / ' + editableText;
+
+        status.appendChild(icon);
+        status.appendChild(label);
+        statusCell.appendChild(status);
         row.appendChild(statusCell);
 
         addCell(row, item.targetPath || item.target || '-');
@@ -144,6 +171,8 @@ async function executeManualEdit() {
 
     executing = true;
     document.querySelectorAll('button').forEach(b => b.disabled = true);
+    document.querySelectorAll('.manual-checkbox, .manual-value')
+        .forEach(element => element.disabled = true);
     document.getElementById('manualResultSection').classList.remove('hidden');
     document.getElementById('manualResult').textContent =
         '設定ファイルを修正し、変更結果を確認しています。';
@@ -181,6 +210,19 @@ async function executeManualEdit() {
     } finally {
         executing = false;
         document.querySelectorAll('button').forEach(b => b.disabled = false);
+
+        document.querySelectorAll('.manual-checkbox').forEach(checkbox => {
+            const index = Number(checkbox.dataset.index);
+            const item = payload?.candidates?.[index];
+            checkbox.disabled = !item?.editable;
+
+            const input = document.querySelector(
+                '.manual-value[data-index="' + checkbox.dataset.index + '"]'
+            );
+            if (input) {
+                input.disabled = !checkbox.checked || !item?.editable;
+            }
+        });
     }
 }
 

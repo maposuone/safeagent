@@ -3,103 +3,827 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SafeAgent 設定ファイル手動修正</title>
+    <title>SafeAgent | 設定ファイル手動修正</title>
     <style>
+        :root {
+            --navy: #071b4d;
+            --blue: #0b6df6;
+            --cyan: #12b8f4;
+            --bg: #f3f7fc;
+            --panel: #ffffff;
+            --line: #dce6f2;
+            --text: #13213b;
+            --muted: #70809a;
+            --danger: #e83a4b;
+            --warning: #ed8b16;
+            --success: #0aa878;
+            --shadow: 0 12px 30px rgba(25,75,130,.09);
+        }
+
+        * { box-sizing: border-box; }
+
         body {
-            font-family: "Yu Gothic", "Meiryo", sans-serif;
-            max-width: 1400px;
-            margin: 30px auto;
-            padding: 20px;
-            background: #f6f8fa;
+            margin: 0;
+            font-family: "Yu Gothic UI", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+            color: var(--text);
+            background: var(--bg);
         }
-        .card {
+
+        button, input { font: inherit; }
+
+        .hidden { display: none !important; }
+
+        .topbar {
+            height: 84px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 28px 10px 22px;
             background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
+            border-bottom: 1px solid #e7edf5;
         }
-        table {
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-logo {
+            width: 92px;
+            height: 64px;
+            object-fit: cover;
+            object-position: 50% 18%;
+            border-radius: 16px;
+        }
+
+        .brand-copy {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-copy strong {
+            color: var(--navy);
+            font-size: 30px;
+            line-height: 1;
+            letter-spacing: -.8px;
+        }
+
+        .brand-copy span {
+            margin-top: 5px;
+            color: #4f6e99;
+            font-size: 12px;
+        }
+
+        .topbar-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 14px;
+            color: #284a7c;
+            background: #f4f8fd;
+            border: 1px solid #dce8f6;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .status-dot {
+            width: 9px;
+            height: 9px;
+            background: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 0 4px rgba(10,168,120,.12);
+        }
+
+        .app-shell {
+            min-height: calc(100vh - 84px);
+            display: grid;
+            grid-template-columns: 190px minmax(0,1fr);
+        }
+
+        .sidebar {
+            min-height: calc(100vh - 84px);
+            padding: 20px 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            color: #fff;
+            background:
+                radial-gradient(circle at 10% 95%, rgba(18,184,244,.35), transparent 38%),
+                linear-gradient(180deg, #0751b2 0%, #062d79 58%, #031d57 100%);
+        }
+
+        .side-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+
+        .nav-item {
             width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 14px;
+            color: rgba(255,255,255,.86);
+            background: transparent;
+            border: 0;
+            border-radius: 11px;
+            cursor: pointer;
             text-align: left;
-            vertical-align: top;
-        }
-        th { background: #f0f2f5; }
-        .table-scroll { overflow-x: auto; }
-        input[type="text"] {
-            width: 100%;
-            min-width: 180px;
-            box-sizing: border-box;
-            padding: 7px;
-        }
-        input[type="text"]:disabled {
-            background: #eee;
-            color: #777;
-        }
-        button {
-            padding: 10px 18px;
-            margin-right: 8px;
+            font-weight: 700;
+            text-decoration: none;
             cursor: pointer;
         }
-        .selection-note { font-weight: bold; }
-        .status-ng { color: #a40000; font-weight: bold; }
-        .muted { color: #666; }
-        pre {
-            background: #111;
-            color: #eee;
-            padding: 16px;
-            border-radius: 8px;
-            white-space: pre-wrap;
+
+        .nav-item:hover,
+        .nav-item.active {
+            color: #fff;
+            background: linear-gradient(135deg, rgba(14,174,255,.92), rgba(21,106,246,.95));
+            box-shadow: 0 10px 22px rgba(0,33,95,.24);
         }
-        .hidden { display: none; }
-    </style>
+
+        .nav-icon {
+            width: 24px;
+            text-align: center;
+            font-size: 20px;
+        }
+
+        .sidebar-brand {
+            padding: 14px 8px 4px;
+            display: flex;
+            flex-direction: column;
+            color: #d8edff;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .sidebar-brand img {
+            width: 112px;
+            height: 112px;
+            object-fit: cover;
+            object-position: 50% 18%;
+            border-radius: 28px;
+            margin-bottom: 10px;
+        }
+
+        .sidebar-brand strong {
+            color: #fff;
+            font-size: 15px;
+        }
+
+        .main {
+            min-width: 0;
+            padding: 18px 20px 38px;
+        }
+
+        .panel {
+            background: #fff;
+            border: 1px solid #e0e9f3;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 16px;
+        }
+
+        .title-wrap {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .title-icon {
+            width: 46px;
+            height: 46px;
+            display: grid;
+            place-items: center;
+            border-radius: 50%;
+            color: #0a6beb;
+            background: #edf6ff;
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        h1 {
+            margin: 0;
+            color: #08285f;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .help-chip {
+            padding: 9px 13px;
+            color: #0b63d5;
+            background: #edf6ff;
+            border: 1px solid #cfe4fb;
+            border-radius: 9px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .help-chip:hover {
+            background: #e3f1ff;
+            border-color: #9ccaf8;
+        }
+
+        .file-info {
+            margin: 14px 0;
+            padding: 12px 14px;
+            color: #234f85;
+            background: linear-gradient(90deg, #eef7ff, #f8fbff);
+            border: 1px solid #dceafb;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
+        .selection-row {
+            margin: 12px 0 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .selection-note {
+            color: #18335e;
+            font-weight: 800;
+        }
+
+        .selection-count {
+            color: #0a6bea;
+        }
+
+        .table-wrap {
+            overflow: auto;
+            border: 1px solid var(--line);
+            border-radius: 11px;
+        }
+
+        table {
+            width: 100%;
+            min-width: 1200px;
+            border-collapse: collapse;
+            background: #fff;
+            font-size: 12px;
+        }
+
+        th {
+            padding: 11px 10px;
+            color: #3b5474;
+            background: #f0f5fa;
+            border-right: 1px solid #e1e9f1;
+            border-bottom: 1px solid #dce6f2;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 9px 10px;
+            color: #30465f;
+            border-right: 1px solid #edf1f6;
+            border-bottom: 1px solid #edf1f6;
+            vertical-align: middle;
+        }
+
+        tbody tr:hover td { background: #f9fcff; }
+
+        .manual-checkbox {
+            width: 16px;
+            height: 16px;
+            accent-color: #0b78f6;
+        }
+
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .status-ok {
+            color: #087b5c;
+            background: #e4f8f0;
+        }
+
+        .status-ng {
+            color: #d82b3c;
+            background: #ffe9ec;
+        }
+
+        .status-disabled {
+            color: #52647c;
+            background: #edf1f6;
+        }
+
+        .status-icon {
+            width: 18px;
+            height: 18px;
+            display: inline-grid;
+            place-items: center;
+            border-radius: 50%;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+        .status-ok .status-icon { background: var(--success); }
+        .status-ng .status-icon { background: var(--danger); }
+        .status-disabled .status-icon { background: #718096; }
+
+        .manual-value {
+            width: 100%;
+            min-width: 170px;
+            padding: 8px 10px;
+            color: #18335e;
+            background: #fff;
+            border: 1px solid #9cc6f5;
+            border-radius: 7px;
+            outline: none;
+        }
+
+        .manual-value:focus {
+            border-color: #0b78f6;
+            box-shadow: 0 0 0 3px rgba(11,120,246,.12);
+        }
+
+        .manual-value:disabled {
+            color: #718096;
+            background: #edf0f3;
+            border-color: #d7dde5;
+        }
+
+        .muted-note {
+            margin: 12px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .actions {
+            margin-top: 18px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .primary-button,
+        .secondary-button {
+            min-width: 138px;
+            min-height: 48px;
+            padding: 10px 18px;
+            border-radius: 9px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .primary-button {
+            color: #fff;
+            border: 0;
+            background: linear-gradient(135deg, #0ca5f5, #124fe2);
+            box-shadow: 0 10px 20px rgba(17,91,223,.2);
+        }
+
+        .secondary-button {
+            color: #0b63d5;
+            background: #fff;
+            border: 1px solid #8dbcf3;
+        }
+
+        button:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+        }
+
+        .result-panel {
+            margin-top: 16px;
+        }
+
+        .result-panel h2 {
+            margin: 0 0 12px;
+            color: #173964;
+        }
+
+        pre {
+            margin: 0;
+            padding: 15px;
+            color: #dceaff;
+            background: #0b1830;
+            border-radius: 10px;
+            white-space: pre-wrap;
+            line-height: 1.65;
+        }
+
+
+        .help-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            background: rgba(3, 25, 70, .48);
+            backdrop-filter: blur(4px);
+        }
+
+        .help-dialog {
+            width: min(760px, 96vw);
+            max-height: 88vh;
+            overflow: auto;
+            background: #fff;
+            border: 1px solid #dbe7f4;
+            border-radius: 18px;
+            box-shadow: 0 24px 70px rgba(4, 35, 90, .28);
+        }
+
+        .help-dialog-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 20px 22px 14px;
+            border-bottom: 1px solid #e8eef6;
+        }
+
+        .help-dialog-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .help-dialog-icon {
+            width: 42px;
+            height: 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 12px;
+            color: #fff;
+            background: linear-gradient(135deg, #11b8f2, #0a61e9);
+            font-weight: 900;
+            font-size: 20px;
+        }
+
+        .help-dialog-header h2 {
+            margin: 0;
+            color: #08285f;
+            font-size: 22px;
+        }
+
+        .help-dialog-header p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .help-close {
+            width: 38px;
+            height: 38px;
+            border: 1px solid #d6e3f2;
+            border-radius: 9px;
+            color: #4d6685;
+            background: #fff;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .help-close:hover {
+            background: #f3f8fe;
+        }
+
+        .help-dialog-body {
+            padding: 20px 22px;
+        }
+
+        .help-steps {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .help-step {
+            display: grid;
+            grid-template-columns: 38px 1fr;
+            gap: 12px;
+            align-items: start;
+            padding: 14px;
+            border: 1px solid #dfe9f4;
+            border-radius: 12px;
+            background: #fbfdff;
+        }
+
+        .help-step-number {
+            width: 34px;
+            height: 34px;
+            display: grid;
+            place-items: center;
+            border-radius: 10px;
+            color: #0a68e8;
+            background: #eaf4ff;
+            font-weight: 900;
+        }
+
+        .help-step strong {
+            display: block;
+            margin-bottom: 4px;
+            color: #173964;
+            font-size: 13px;
+        }
+
+        .help-step span {
+            color: #60758f;
+            font-size: 12px;
+            line-height: 1.65;
+        }
+
+        .help-note {
+            margin-top: 14px;
+            padding: 13px 15px;
+            border-left: 4px solid #0b78f6;
+            border-radius: 8px;
+            color: #42617e;
+            background: #f1f7ff;
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .help-note strong {
+            color: #0b58bd;
+        }
+
+        .help-dialog-footer {
+            display: flex;
+            justify-content: flex-end;
+            padding: 0 22px 20px;
+        }
+
+        .help-ok {
+            min-width: 120px;
+            min-height: 42px;
+            border: 0;
+            border-radius: 9px;
+            color: #fff;
+            background: linear-gradient(135deg, #0ca5f5, #124fe2);
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        @media (max-width: 700px) {
+            .help-steps {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .app-shell { display: block; }
+            .sidebar { min-height: auto; }
+            .side-nav { flex-direction: row; overflow-x: auto; }
+            .nav-item { width: auto; flex: 0 0 auto; }
+            .sidebar-brand { display: none; }
+            .main { padding: 10px; }
+            .topbar-badge { display: none; }
+        }
+    
+        /* 手動修正画面では左側ナビゲーションボタンを非表示 */
+        .side-nav {
+            display: none !important;
+        }
+
+</style>
 </head>
 <body>
-
-<div class="card">
-    <h1>設定ファイル手動修正</h1>
-    <p>
-        定数設計書に定義された設定内容をすべて表示しています。
-        修正したい項目を選択してください。チェックした行だけ「設定ファイル設定値」を編集できます。
-    </p>
-    <p id="fileInfo"></p>
-    <p class="selection-note">選択中：<span id="manualSelectionCount">0</span>件</p>
-
-    <div class="table-scroll">
-        <table>
-            <thead>
-            <tr>
-                <th>選択</th>
-                <th>状態</th>
-                <th>対象位置</th>
-                <th>設定項目</th>
-                <th>設計書設定値</th>
-                <th>設定ファイル設定値</th>
-                <th>理由</th>
-            </tr>
-            </thead>
-            <tbody id="manualEditBody"></tbody>
-        </table>
+<header class="topbar">
+    <div class="brand">
+        <img src="safeagent-logo.jpeg" alt="SafeAgent" class="brand-logo">
+        <div class="brand-copy">
+            <strong>SafeAgent</strong>
+            <span>設定確認ダッシュボード</span>
+        </div>
     </div>
+    <div class="topbar-badge">
+        <span class="status-dot"></span>
+        Safety Gateway
+    </div>
+</header>
 
-    <p class="muted">
-        設計書の全項目を表示します。設定ファイルに対象項目が存在しない場合や対象位置を安全に特定できない場合は、修正不可として表示します。
-    </p>
+<div class="app-shell">
+    <aside class="sidebar">
+        <nav class="side-nav">
+            <a class="nav-item" href="/">
+                <span class="nav-icon">⌂</span><span>ダッシュボード</span>
+            </a>
+            <a class="nav-item" href="/#requestSection">
+                <span class="nav-icon">✓</span><span>設定確認</span>
+            </a>
+            <a class="nav-item" href="/history.html">
+                <span class="nav-icon">◷</span><span>作業履歴</span>
+            </a>
+            <a class="nav-item" href="/#resultSection">
+                <span class="nav-icon">▤</span><span>設計書比較</span>
+            </a>
+            <a class="nav-item active" href="/manual-edit.html">
+                <span class="nav-icon">⌘</span><span>手動修正</span>
+            </a>
+        </nav>
 
-    <button onclick="executeManualEdit()">実行</button>
-    <button onclick="window.close()">キャンセル</button>
+        <div class="sidebar-brand">
+            <img src="safeagent-logo.jpeg" alt="">
+            <strong>SafeAgent</strong>
+            <span>Let AI act.</span>
+            <span>Keep humans in control.</span>
+        </div>
+    </aside>
+
+    <main class="main">
+        <section class="panel">
+            <div class="header-row">
+                <div class="title-wrap">
+                    <div class="title-icon">⌘</div>
+                    <div>
+                        <h1>設定ファイル手動修正</h1>
+                        <p class="subtitle">
+                            定数設計書に定義された設定内容をすべて表示しています。
+                            修正したい項目を選択してください。チェックした行だけ「設定ファイル設定値」を編集できます。
+                        </p>
+                    </div>
+                </div>
+                <button class="help-chip" type="button" onclick="openHelp()">？ 使い方ガイド</button>
+            </div>
+
+            <div id="fileInfo" class="file-info">対象ファイル情報を読み込んでいます。</div>
+
+            <div class="selection-row">
+                <div class="selection-note">
+                    選択中：<span id="manualSelectionCount" class="selection-count">0</span>件
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>選択</th>
+                        <th>状態</th>
+                        <th>対象位置</th>
+                        <th>設定項目</th>
+                        <th>設計書設定値</th>
+                        <th>設定ファイル設定値</th>
+                        <th>理由</th>
+                    </tr>
+                    </thead>
+                    <tbody id="manualEditBody"></tbody>
+                </table>
+            </div>
+
+            <p class="muted-note">
+                設計書の全項目を表示します。設定ファイルに対象項目が存在しない場合や、対象位置を安全に特定できない場合は修正不可として表示します。
+            </p>
+
+            <div class="actions">
+                <button class="secondary-button" onclick="window.close()">キャンセル</button>
+                <button class="primary-button" onclick="executeManualEdit()">▶ 実行</button>
+            </div>
+        </section>
+
+        <section id="manualResultSection" class="panel result-panel hidden">
+            <h2>実行結果</h2>
+            <pre id="manualResult"></pre>
+        </section>
+    </main>
 </div>
 
-<div id="manualResultSection" class="card hidden">
-    <h2>実行結果</h2>
-    <pre id="manualResult"></pre>
+
+<div id="helpOverlay" class="help-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="help-dialog">
+        <div class="help-dialog-header">
+            <div class="help-dialog-title">
+                <div class="help-dialog-icon">?</div>
+                <div>
+                    <h2 id="helpTitle">設定ファイル手動修正の使い方</h2>
+                    <p>設計書の全項目を確認し、必要な設定だけ安全に手動修正します。</p>
+                </div>
+            </div>
+            <button class="help-close" type="button" onclick="closeHelp()" aria-label="閉じる">×</button>
+        </div>
+
+        <div class="help-dialog-body">
+            <div class="help-steps">
+                <div class="help-step">
+                    <div class="help-step-number">1</div>
+                    <div>
+                        <strong>設定内容を確認</strong>
+                        <span>定数設計書の設定値と、現在の設定ファイル値を一覧で確認します。</span>
+                    </div>
+                </div>
+
+                <div class="help-step">
+                    <div class="help-step-number">2</div>
+                    <div>
+                        <strong>修正したい項目を選択</strong>
+                        <span>左端のチェックボックスを選択します。手動修正では選択件数に上限はありません。</span>
+                    </div>
+                </div>
+
+                <div class="help-step">
+                    <div class="help-step-number">3</div>
+                    <div>
+                        <strong>設定ファイル設定値を編集</strong>
+                        <span>チェックした行だけ「設定ファイル設定値」が編集可能になります。設計書設定値は変更できません。</span>
+                    </div>
+                </div>
+
+                <div class="help-step">
+                    <div class="help-step-number">4</div>
+                    <div>
+                        <strong>「実行」を押す</strong>
+                        <span>入力した変更内容をSafeAgentへ送信します。未選択の行は変更されません。</span>
+                    </div>
+                </div>
+
+                <div class="help-step">
+                    <div class="help-step-number">5</div>
+                    <div>
+                        <strong>Java側で再確認</strong>
+                        <span>対象位置・設定項目・現在値を実行直前に再確認し、対象を安全に特定できない場合は変更しません。</span>
+                    </div>
+                </div>
+
+                <div class="help-step">
+                    <div class="help-step-number">6</div>
+                    <div>
+                        <strong>Evidenceで変更確認</strong>
+                        <span>変更後の設定ファイルを再読込し、指定した値へ変更されたことを確認します。</span>
+                    </div>
+                </div>
+
+                <div class="help-step">
+                    <div class="help-step-number">7</div>
+                    <div>
+                        <strong>修正済みファイルを保存</strong>
+                        <span>Evidenceが成功した場合、修正後の設定ファイルをダウンロードできます。</span>
+                    </div>
+                </div>
+
+                <div class="help-step">
+                    <div class="help-step-number">!</div>
+                    <div>
+                        <strong>修正不可の項目</strong>
+                        <span>設定ファイルに存在しない項目や、対象位置を安全に特定できない項目は修正不可として表示されます。</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="help-note">
+                <strong>ポイント：</strong>
+                「一致 / 修正可能」の項目も必要に応じて変更できます。
+                「不一致 / 修正可能」は設計書との差異がある項目です。
+                手動修正はAI提案の最大5件制限とは別機能のため、選択件数は無制限です。
+            </div>
+        </div>
+
+        <div class="help-dialog-footer">
+            <button class="help-ok" type="button" onclick="closeHelp()">確認しました</button>
+        </div>
+    </div>
 </div>
+
+<script>
+    function openHelp() {
+        document.getElementById('helpOverlay').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeHelp() {
+        document.getElementById('helpOverlay').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeHelp();
+        }
+    });
+
+    document.getElementById('helpOverlay').addEventListener('click', function(event) {
+        if (event.target === this) {
+            closeHelp();
+        }
+    });
+</script>
 
 <script src="manual-edit.js"></script>
 </body>
