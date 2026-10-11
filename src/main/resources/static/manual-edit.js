@@ -1,5 +1,12 @@
 'use strict';
 
+function showValidationMessage(message) {
+    const element = document.getElementById('validationMessage');
+    element.textContent = message;
+    element.classList.remove('hidden');
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 let payload = null;
 let executing = false;
 
@@ -23,7 +30,7 @@ function loadPayload() {
         renderCandidates(payload.candidates || []);
 
     } catch (error) {
-        alert(error.message);
+        showValidationMessage(error.message);
         document.getElementById('fileInfo').textContent = error.message;
     }
 }
@@ -133,13 +140,14 @@ function updateSelectionCount() {
 
 async function executeManualEdit() {
     if (executing) return;
+    document.getElementById('validationMessage').classList.add('hidden');
 
     const selected = Array.from(
         document.querySelectorAll('.manual-checkbox:checked')
     );
 
     if (selected.length === 0) {
-        alert('修正する項目を1件以上選択してください。');
+        showValidationMessage('修正する項目を1件以上選択してください。');
         return;
     }
 
@@ -159,7 +167,7 @@ async function executeManualEdit() {
         const newValue = input ? input.value : '';
 
         if (newValue === item.currentValue) {
-            alert('「' + item.key + '」の修正後の値が現在値と同じです。');
+            showValidationMessage('「' + item.key + '」の修正後の値が現在値と同じです。');
             return;
         }
 

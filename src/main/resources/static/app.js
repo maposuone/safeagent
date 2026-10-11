@@ -1,5 +1,12 @@
 'use strict';
 
+function showValidationMessage(message, targetId = 'validationMessage') {
+    const element = document.getElementById(targetId);
+    element.textContent = message;
+    element.classList.remove('hidden');
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 // 表示用の日本語。APIの項目名・操作コードはそのまま保持する。
 const fieldLabels = {
     status: '処理状況', mode: '依頼モード', message: '説明', reason: '中止した理由', fileName: 'ファイル名',
@@ -207,12 +214,12 @@ function scrollToSection(id) {
 
 function openManualEdit() {
     if (currentRequestMode !== 'FIX') {
-        alert('手動修正はFIXモードで利用してください。');
+        showValidationMessage('手動修正はFIXモードで利用してください。');
         return;
     }
 
     if (!currentRunId || !selectedFile || currentManualEditCandidates.length === 0) {
-        alert('先にFIXモードで設定ファイルを確認してください。');
+        showValidationMessage('先にFIXモードで設定ファイルを確認してください。');
         return;
     }
 
@@ -265,6 +272,7 @@ function prepareDownload(data) {
 function setBusy(value) {
     busy = value;
     document.querySelectorAll('button').forEach(button => { button.disabled = value; });
+    document.querySelectorAll('input[name="requestMode"]').forEach(radio => { radio.disabled = value; });
 }
 
 async function requestJson(url, options) {
@@ -337,12 +345,21 @@ function clearDesignDifferences() {
     document.getElementById('designDifferenceCount').textContent = '0';
 }
 
-function renderDesignDifferences(differences) {
+function renderDesignDifferences(differences, comparisonStatus, requestMode) {
     clearDesignDifferences();
+
+    if (requestMode === 'EXPLAIN' || comparisonStatus === 'NOT_APPLICABLE') {
+        document.getElementById('designComparisonMessage').textContent =
+            'EXPLAINでは定数設計書との比較は行いません。';
+        document.getElementById('designComparisonMessage').classList.remove('hidden');
+        return;
+    }
 
     if (!Array.isArray(differences) || differences.length === 0) {
         document.getElementById('designComparisonMessage').textContent =
-            '定数設計書との比較結果：差異はありません。';
+            comparisonStatus === 'MATCH'
+                ? '定数設計書との比較結果：差異はありません。'
+                : '定数設計書との比較結果は確認できていません。';
         document.getElementById('designComparisonMessage').classList.remove('hidden');
         return;
     }
@@ -385,7 +402,7 @@ function onChangeSelection(event) {
 
     if (checked > 5) {
         event.target.checked = false;
-        alert('1回に変更できるのは最大5件です。');
+        showValidationMessage('1回に変更できるのは最大5件です。', 'approvalValidationMessage');
     }
 
     updateSelectionCount();
@@ -456,6 +473,8 @@ function renderExecutionResults(changeResults) {
 
 async function runAgent() {
     if (busy) return;
+    document.getElementById('validationMessage').classList.add('hidden');
+    document.getElementById('approvalValidationMessage').classList.add('hidden');
 
     const file = document.getElementById('file').files[0];
     const designFile = document.getElementById('designFile').files[0];
@@ -463,22 +482,22 @@ async function runAgent() {
     const environment = document.querySelector('input[name="environment"]:checked')?.value;
 
     if (!file) {
-        alert('確認する設定ファイルを選んでください。');
+        showValidationMessage('確認する設定ファイルを選んでください。');
         return;
     }
 
     if (!requestMode) {
-        alert('AIへの依頼を選択してください。');
+        showValidationMessage('AIへの依頼を選択してください。');
         return;
     }
 
     if ((requestMode === 'ANALYZE' || requestMode === 'FIX') && !designFile) {
-        alert('ANALYZE / FIXでは定数設計書を選択してください。');
+        showValidationMessage('ANALYZE / FIXでは定数設計書を選択してください。');
         return;
     }
 
     if ((requestMode === 'ANALYZE' || requestMode === 'FIX') && !environment) {
-        alert('本番環境またはテスト環境を選んでください。');
+        showValidationMessage('本番環境またはテスト環境を選んでください。');
         return;
     }
 
@@ -500,23 +519,22 @@ async function runAgent() {
     document.getElementById('executionResult').textContent = '';
     document.getElementById('result').textContent = '設定ファイルを確認しています。しばらくお待ちください。';
 
-    currentFileContent = await file.text();
-
     const formData = new FormData();
     formData.append('requestMode', requestMode);
     formData.append('file', file);
 
-    if (designFile) {
+    if (requestMode !== 'EXPLAIN' && designFile) {
         formData.append('designFile', designFile);
     }
 
-    if (environment) {
+    if (requestMode !== 'EXPLAIN' && environment) {
         formData.append('environment', environment);
     }
 
     setBusy(true);
 
     try {
+        currentFileContent = await file.text();
         const data = await requestJson('/api/safeagent/run', { method: 'POST', body: formData });
 
         currentRunId = data.runId || null;
@@ -530,7 +548,7 @@ async function runAgent() {
 
         document.getElementById('result').textContent = formatResult(data);
         renderFindings(data.findings || []);
-        renderDesignDifferences(data.designDifferences || []);
+        renderDesignDifferences(data.designDifferences || [], data.designComparisonStatus, requestMode);
         updateDashboardMetrics(data);
 
         if (requestMode === 'FIX' && data.status === 'WAITING_FOR_APPROVAL') {
@@ -550,7 +568,10 @@ async function runAgent() {
         }
 
     } catch (error) {
-        showError('result', error);
+        showValidationMessage(error instanceof TypeError
+            ? 'SafeAgentに接続できませんでした。起動状態とネットワークを確認してください。'
+            : error.message);
+        setText('result', '確認処理を完了できませんでした。上部のメッセージを確認してください。');
     } finally {
         setBusy(false);
     }
@@ -558,14 +579,16 @@ async function runAgent() {
 
 async function approve() {
     if (busy) return;
+    document.getElementById('validationMessage').classList.add('hidden');
+    document.getElementById('approvalValidationMessage').classList.add('hidden');
 
     if (!selectedFile) {
-        alert('設定ファイルを選び、先に確認を実行してください。');
+        showValidationMessage('設定ファイルを選び、先に確認を実行してください。');
         return;
     }
 
     if (!currentRunId) {
-        alert('実行履歴IDがありません。もう一度確認を実行してください。');
+        showValidationMessage('実行履歴IDがありません。もう一度確認を実行してください。');
         return;
     }
 
@@ -574,12 +597,12 @@ async function approve() {
     );
 
     if (selected.length === 0) {
-        alert('変更する項目を1件以上選択してください。');
+        showValidationMessage('変更する項目を1件以上選択してください。', 'approvalValidationMessage');
         return;
     }
 
     if (selected.length > 5) {
-        alert('1回に変更できるのは最大5件です。');
+        showValidationMessage('1回に変更できるのは最大5件です。', 'approvalValidationMessage');
         return;
     }
 
@@ -649,6 +672,41 @@ async function loadAudit() {
 }
 
 
+function resetModeScreen() {
+    document.getElementById('validationMessage').classList.add('hidden');
+    document.getElementById('approvalValidationMessage').classList.add('hidden');
+    selectedFile = null;
+    currentRunId = null;
+    currentProposedChanges = [];
+    currentManualEditCandidates = [];
+    currentFileContent = '';
+
+    ['file', 'designFile'].forEach(id => { document.getElementById(id).value = ''; });
+    setText('configFileName', '設定ファイルを選択');
+    setText('designFileName', '定数設計書を選択');
+    ['configFileName', 'designFileName'].forEach(id => {
+        document.getElementById(id).classList.remove('has-file');
+    });
+    document.querySelectorAll('input[name="environment"]').forEach(radio => {
+        radio.checked = radio.value === 'PROD';
+    });
+
+    resetDashboardMetrics();
+    resetDownload();
+    clearFindings();
+    clearDesignDifferences();
+    ['approvalSection', 'executionSection', 'executionChangesSection', 'designComparisonMessage'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+    });
+    ['approvalChangesBody', 'executionChangesBody'].forEach(id => {
+        document.getElementById(id).innerHTML = '';
+    });
+    setText('selectionCount', '0');
+    setText('executionResult', '');
+    setText('designComparisonMessage', '');
+    setText('result', '設定ファイルを選び、「確認を開始する」を押してください。');
+}
+
 function updateModeRequirement() {
     const requestMode =
         document.querySelector('input[name="requestMode"]:checked')?.value;
@@ -696,7 +754,10 @@ document.querySelectorAll(
 ).forEach(radio => {
     radio.addEventListener(
         'change',
-        updateModeRequirement
+        () => {
+            resetModeScreen();
+            updateModeRequirement();
+        }
     );
 });
 

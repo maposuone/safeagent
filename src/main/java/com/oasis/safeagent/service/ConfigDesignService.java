@@ -13,6 +13,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.oasis.safeagent.exception.SafeAgentException;
 import com.oasis.safeagent.model.ConfigDesignDocument;
 import com.oasis.safeagent.model.ConfigDesignItem;
 
@@ -22,12 +23,15 @@ public class ConfigDesignService {
     private final DataFormatter formatter =
             new DataFormatter();
 
-    /**
+    /*
      * 従来互換。
-     * 設計書内で最初に見つかった X-1 / X-2 を読み込む。
+     *
+     * 最初に見つかった
+     * X-1 / X-2 を読み込む。
      */
     public ConfigDesignDocument load(
-            MultipartFile designFile) throws Exception {
+            MultipartFile designFile)
+            throws Exception {
 
         return loadInternal(
                 designFile,
@@ -35,19 +39,14 @@ public class ConfigDesignService {
         );
     }
 
-    /**
-     * 複数ファイル対応。
-     *
-     * 1-1 / 1-2
-     * 2-1 / 2-2
-     * 3-1 / 3-2 ...
-     *
-     * を順番に検索し、X-1のファイル名が
-     * actualFileName と一致するX-2を使用する。
+    /*
+     * 実際の設定ファイル名を指定して
+     * 対応する設計を取得する。
      */
     public ConfigDesignDocument loadForTarget(
             MultipartFile designFile,
-            String actualFileName) throws Exception {
+            String actualFileName)
+            throws Exception {
 
         if (actualFileName == null
                 || actualFileName.isBlank()) {
@@ -65,15 +64,29 @@ public class ConfigDesignService {
 
     private ConfigDesignDocument loadInternal(
             MultipartFile designFile,
-            String actualFileName) throws Exception {
+            String actualFileName)
+            throws Exception {
 
         if (designFile == null
                 || designFile.isEmpty()) {
 
-            throw new IllegalArgumentException(
-                    "定数設計書が指定されていません。"
-            );
+            throw SafeAgentException
+                    .designFileRequired();
         }
+
+        /*
+         * Excel内で見つかった対象ファイル名。
+         *
+         * FILE_MISMATCH判定用。
+         */
+        List<String> discoveredTargets =
+                new ArrayList<>();
+
+        /*
+         * actualFileName と一致する
+         * X-1が存在したか。
+         */
+        boolean targetMatched = false;
 
         try (InputStream input =
                      designFile.getInputStream();
@@ -101,12 +114,12 @@ public class ConfigDesignService {
                         );
 
                 /*
-                 * 途中番号が欠番でも、
-                 * 後続シートが存在する可能性があるため
-                 * すぐにはbreakしない。
+                 * X-1またはX-2がなければ
+                 * 次の番号を見る。
                  */
                 if (fileSheet == null
                         || detailSheet == null) {
+
                     continue;
                 }
 
@@ -115,25 +128,69 @@ public class ConfigDesignService {
                                 fileSheet
                         );
 
+                /*
+                 * X-1から対象ファイル名を
+                 * 読めなかった。
+                 */
                 if (designFileName.isBlank()) {
                     continue;
                 }
 
-                if (actualFileName != null
-                        && !sameFileName(
-                                actualFileName,
-                                designFileName
-                        )) {
+                discoveredTargets.add(
+                        designFileName
+                );
+
+                /*
+                 * load()の場合は
+                 * 最初の有効設計を利用。
+                 */
+                if (actualFileName == null) {
+
+                    List<ConfigDesignItem> items =
+                            readDesignItems(
+                                    detailSheet
+                            );
+
+                    if (!items.isEmpty()) {
+
+                        return new ConfigDesignDocument(
+                                designFileName,
+                                items
+                        );
+                    }
+
                     continue;
                 }
+
+                /*
+                 * 設定ファイルと
+                 * 設計書の対象ファイルを比較。
+                 */
+                if (!sameFileName(
+                        actualFileName,
+                        designFileName)) {
+
+                    continue;
+                }
+
+                /*
+                 * ファイル名は一致した。
+                 */
+                targetMatched = true;
 
                 List<ConfigDesignItem> items =
                         readDesignItems(
                                 detailSheet
                         );
 
+                /*
+                 * ファイル名は一致したが
+                 * X-2に設定項目がない。
+                 */
                 if (items.isEmpty()) {
-                    continue;
+
+                    throw SafeAgentException
+                            .designNotFound();
                 }
 
                 return new ConfigDesignDocument(
@@ -143,49 +200,91 @@ public class ConfigDesignService {
             }
         }
 
+        /*
+         * load()で有効な設計が
+         * 何もなかった。
+         */
         if (actualFileName == null) {
-            throw new IllegalArgumentException(
-                    "定数設計書にX-1 / X-2形式の設定定義がありません。"
-            );
+
+            throw SafeAgentException
+                    .designNotFound();
         }
 
-        throw new IllegalArgumentException(
-                "定数設計書に対象ファイルの設計がありません。"
-                        + " file="
-                        + actualFileName
-        );
+        /*
+         * 同名のX-1は存在したが
+         * 有効な設計を取得できなかった。
+         */
+        if (targetMatched) {
+
+            throw SafeAgentException
+                    .designNotFound();
+        }
+
+        /*
+         * 設計書には対象ファイルがあるが、
+         * 実際に選択した設定ファイル名とは違う。
+         *
+         * 例:
+         * actual = httpd.conf
+         * design = server.xml
+         */
+        if (!discoveredTargets.isEmpty()) {
+
+            String designTarget =
+                    discoveredTargets.get(0);
+
+            throw SafeAgentException
+                    .fileMismatch(
+                            actualFileName,
+                            designTarget
+                    );
+        }
+
+        /*
+         * X-1 / X-2や対象ファイル名自体を
+         * 見つけられない。
+         */
+        throw SafeAgentException
+                .designNotFound();
     }
 
+    /*
+     * X-1から対象設定ファイル名を取得。
+     */
     private String readTargetFileName(
             Sheet sheet) {
 
         /*
-         * 現行フォーマットはB4。
+         * 現在の標準テンプレートではB4。
          */
         Row row =
                 sheet.getRow(3);
 
         if (row != null) {
+
             String value =
                     getCellValue(
                             row.getCell(1)
                     );
 
             if (!value.isBlank()) {
+
                 return value;
             }
         }
 
         /*
-         * フォーマット差異に備え、
-         * B4が空ならシート内の文字列を探索する。
+         * B4にない場合は
+         * シート全体から設定ファイル名を探索。
          */
         for (Row currentRow : sheet) {
 
             for (Cell cell : currentRow) {
 
                 String value =
-                        getCellValue(cell);
+                        getCellValue(
+                                cell
+                        );
 
                 if (looksLikeConfigFileName(
                         value)) {
@@ -198,16 +297,20 @@ public class ConfigDesignService {
         return "";
     }
 
-    private List<ConfigDesignItem> readDesignItems(
-            Sheet sheet) {
+    /*
+     * X-2から定数一覧を読み込む。
+     */
+    private List<ConfigDesignItem>
+            readDesignItems(
+                    Sheet sheet) {
 
         List<ConfigDesignItem> items =
                 new ArrayList<>();
 
         /*
-         * 1行目タイトル
-         * 2行目ヘッダー
-         * 3行目以降データ
+         * 1行目 タイトル
+         * 2行目 ヘッダー
+         * 3行目以降 データ
          */
         for (int rowIndex = 2;
              rowIndex <= sheet.getLastRowNum();
@@ -232,14 +335,19 @@ public class ConfigDesignService {
                             row.getCell(3)
                     );
 
+            /*
+             * 完全な空行。
+             */
             if (noText.isBlank()
                     && key.isBlank()) {
+
                 continue;
             }
 
             int no;
 
             try {
+
                 no =
                         Integer.parseInt(
                                 noText
@@ -251,8 +359,9 @@ public class ConfigDesignService {
                         );
 
             } catch (NumberFormatException e) {
+
                 /*
-                 * 注記行などは無視。
+                 * 注記やタイトル行は無視。
                  */
                 continue;
             }
@@ -260,18 +369,40 @@ public class ConfigDesignService {
             items.add(
                     new ConfigDesignItem(
                             no,
-                            getCellValue(row.getCell(1)),
-                            getCellValue(row.getCell(2)),
+                            getCellValue(
+                                    row.getCell(1)
+                            ),
+                            getCellValue(
+                                    row.getCell(2)
+                            ),
                             key,
-                            getCellValue(row.getCell(4)),
-                            getCellValue(row.getCell(5)),
-                            getCellValue(row.getCell(6)),
-                            getCellValue(row.getCell(7)),
-                            getCellValue(row.getCell(8)),
-                            getCellValue(row.getCell(9)),
-                            getCellValue(row.getCell(10)),
-                            getCellValue(row.getCell(11)),
-                            getCellValue(row.getCell(12))
+                            getCellValue(
+                                    row.getCell(4)
+                            ),
+                            getCellValue(
+                                    row.getCell(5)
+                            ),
+                            getCellValue(
+                                    row.getCell(6)
+                            ),
+                            getCellValue(
+                                    row.getCell(7)
+                            ),
+                            getCellValue(
+                                    row.getCell(8)
+                            ),
+                            getCellValue(
+                                    row.getCell(9)
+                            ),
+                            getCellValue(
+                                    row.getCell(10)
+                            ),
+                            getCellValue(
+                                    row.getCell(11)
+                            ),
+                            getCellValue(
+                                    row.getCell(12)
+                            )
                     )
             );
         }
@@ -279,6 +410,9 @@ public class ConfigDesignService {
         return items;
     }
 
+    /*
+     * パスを除いたファイル名で比較する。
+     */
     private boolean sameFileName(
             String actual,
             String design) {
@@ -315,6 +449,7 @@ public class ConfigDesignService {
                 normalized.lastIndexOf('/');
 
         if (slash >= 0) {
+
             normalized =
                     normalized.substring(
                             slash + 1
@@ -329,11 +464,14 @@ public class ConfigDesignService {
 
         if (value == null
                 || value.isBlank()) {
+
             return false;
         }
 
         String lower =
-                value.toLowerCase();
+                value
+                        .trim()
+                        .toLowerCase();
 
         return lower.endsWith(".xml")
                 || lower.endsWith(".conf")
@@ -353,7 +491,9 @@ public class ConfigDesignService {
         }
 
         return formatter
-                .formatCellValue(cell)
+                .formatCellValue(
+                        cell
+                )
                 .trim();
     }
 }

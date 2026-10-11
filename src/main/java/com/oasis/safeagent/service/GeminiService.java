@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.HttpOptions;
+import com.oasis.safeagent.exception.SafeAgentException;
 
 @Service
 public class GeminiService {
@@ -25,7 +26,8 @@ public class GeminiService {
                 .httpOptions(
                         HttpOptions.builder()
                                 .apiVersion("v1")
-                                .build())
+                                .build()
+                )
                 .build()) {
 
             log.info("Gemini client created");
@@ -34,14 +36,25 @@ public class GeminiService {
                     client.models.generateContent(
                             "gemini-2.5-flash",
                             prompt,
-                            null);
+                            null
+                    );
 
             log.info("Gemini API call success");
 
-            return response.text();
+            String text = response.text();
+
+            if (text == null || text.isBlank()) {
+                log.error("Gemini returned an empty response");
+                throw SafeAgentException.aiError();
+            }
+
+            return text;
+
+        } catch (SafeAgentException e) {
+            throw e;
 
         } catch (Exception e) {
-
+            // 詳細はCloud Runログへ。ブラウザには内部情報を返さない。
             log.error(
                     "Gemini API call failed: type={}, message={}",
                     e.getClass().getName(),
@@ -49,7 +62,7 @@ public class GeminiService {
                     e
             );
 
-            throw e;
+            throw SafeAgentException.aiError();
         }
     }
 }

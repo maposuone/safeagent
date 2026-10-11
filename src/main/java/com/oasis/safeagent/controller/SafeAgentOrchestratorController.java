@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.oasis.safeagent.exception.SafeAgentException;
 import com.oasis.safeagent.model.ConfigDesignDocument;
 import com.oasis.safeagent.model.ConfigDifference;
 import com.oasis.safeagent.model.ManualEditCandidate;
@@ -217,9 +218,7 @@ public class SafeAgentOrchestratorController {
                 && (designFile == null
                 || designFile.isEmpty())) {
 
-            throw new IllegalArgumentException(
-                    "ANALYZE / FIXでは定数設計書を選択してください。"
-            );
+            throw SafeAgentException.designFileRequired();
         }
 
         Path savedPath =
