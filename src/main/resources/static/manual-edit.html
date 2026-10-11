@@ -251,6 +251,16 @@
             font-weight: 700;
         }
 
+        .validation-message {
+            margin: 12px 0;
+            padding: 12px 14px;
+            color: #087557;
+            background: #eaf9f4;
+            border: 1px solid #c5eee1;
+            border-radius: 9px;
+            font-weight: 700;
+        }
+
         .selection-row {
             margin: 12px 0 10px;
             display: flex;
@@ -664,7 +674,7 @@
                 <button class="help-chip" type="button" onclick="openHelp()">？ 使い方ガイド</button>
             </div>
 
-            <p id="validationMessage" class="file-info hidden" role="alert"></p>
+            <p id="validationMessage" class="validation-message hidden" role="alert"></p>
             <div id="fileInfo" class="file-info">対象ファイル情報を読み込んでいます。</div>
 
             <div class="selection-row">

@@ -12,6 +12,23 @@ import org.junit.jupiter.api.Test;
 class ToolExecutionServiceTest {
 
     @Test
+    void simultaneousUploadsKeepSeparateFiles() throws Exception {
+        ToolExecutionService service = new ToolExecutionService();
+        java.util.Set<Path> paths = java.util.concurrent.ConcurrentHashMap.newKeySet();
+        java.util.stream.IntStream.range(0, 50).parallel().forEach(index -> {
+            try {
+                String content = "Timeout " + index;
+                Path path = service.saveFile("httpd.conf", content.getBytes(StandardCharsets.UTF_8));
+                assertTrue(paths.add(path));
+                assertEquals(content, service.readConfig(path));
+            } catch (java.io.IOException e) {
+                throw new java.io.UncheckedIOException(e);
+            }
+        });
+        assertEquals(50, paths.size());
+    }
+
+    @Test
     void shouldActuallyModifyConfigurationFile() throws Exception {
 
         ToolExecutionService service =

@@ -10,6 +10,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
@@ -79,7 +80,7 @@ public class ToolExecutionService {
         String safeFileName = sanitizeFileName(originalFileName);
 
         Path target = workDirectory
-                .resolve(System.currentTimeMillis() + "-" + safeFileName)
+                .resolve(UUID.randomUUID() + "-" + safeFileName)
                 .normalize();
 
         validateWorkspacePath(target);

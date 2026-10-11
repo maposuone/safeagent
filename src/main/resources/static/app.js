@@ -235,7 +235,7 @@ function getManualEditPayload() {
         runId: currentRunId,
         fileName: selectedFile?.name || '',
         fileContent: currentFileContent,
-        candidates: currentManualEditCandidates
+        candidates: currentManualEditCandidates.map(item => ({ ...item }))
     };
 }
 
@@ -534,7 +534,11 @@ async function runAgent() {
     setBusy(true);
 
     try {
-        currentFileContent = await file.text();
+        try {
+            currentFileContent = await file.text();
+        } catch (_) {
+            throw new Error('設定ファイルを読み取れませんでした。ファイルが変更・移動・削除されていないか確認し、設定ファイルを選び直してください。');
+        }
         const data = await requestJson('/api/safeagent/run', { method: 'POST', body: formData });
 
         currentRunId = data.runId || null;

@@ -138,6 +138,21 @@ function updateSelectionCount() {
     document.getElementById('manualSelectionCount').textContent = String(count);
 }
 
+function applyVerifiedEdits(data, edits) {
+    if (data.status !== 'COMPLETED' || data.evidence !== 'VERIFIED'
+            || typeof data.modifiedFileContent !== 'string') return false;
+    payload.fileContent = data.modifiedFileContent;
+    edits.forEach(({ index, newValue }) => {
+        const item = payload.candidates[index];
+        item.currentValue = newValue;
+        item.type = String(newValue) === String(item.designValue) ? 'MATCH' : 'VALUE_MISMATCH';
+        item.reason = item.type === 'MATCH'
+            ? '設計書の設定値と一致しています。必要に応じて手動変更できます。'
+            : '設計書の設定値と異なります。手動変更できます。';
+    });
+    return true;
+}
+
 async function executeManualEdit() {
     if (executing) return;
     document.getElementById('validationMessage').classList.add('hidden');
@@ -160,6 +175,7 @@ async function executeManualEdit() {
     formData.append('file', fileBlob, payload.fileName);
     formData.append('runId', payload.runId);
 
+    const edits = [];
     for (const checkbox of selected) {
         const index = Number(checkbox.dataset.index);
         const item = payload.candidates[index];
@@ -175,6 +191,7 @@ async function executeManualEdit() {
         formData.append('keys', item.key || '');
         formData.append('currentValues', item.currentValue ?? '');
         formData.append('newValues', newValue);
+        edits.push({ index, newValue });
     }
 
     executing = true;
@@ -203,9 +220,8 @@ async function executeManualEdit() {
             + 'Evidence：' + (data.evidence || '-') + '\n'
             + '説明：' + (data.message || '-');
 
-        if (data.status === 'COMPLETED'
-                && data.evidence === 'VERIFIED'
-                && typeof data.modifiedFileContent === 'string') {
+        if (applyVerifiedEdits(data, edits)) {
+            renderCandidates(payload.candidates);
 
             downloadModifiedFile(
                 data.downloadFileName || payload.fileName,

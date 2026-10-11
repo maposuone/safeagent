@@ -61,6 +61,8 @@ for (let i = 0; i < modes.length; i++) {
     assert.ok(element('modeRequirement').textContent.length > 0);
 }
 console.log('EXPLAIN / ANALYZE / FIX selection and required inputs: PASS');
+vm.runInContext("currentManualEditCandidates = [{currentValue:'original'}]; getManualEditPayload().candidates[0].currentValue = 'edited'", context);
+assert.equal(vm.runInContext('currentManualEditCandidates[0].currentValue', context), 'original');
 (async () => {
     modes.forEach(radio => radio.checked = radio.value === 'EXPLAIN');
     modes[0].handlers.change();
@@ -82,7 +84,8 @@ console.log('EXPLAIN / ANALYZE / FIX selection and required inputs: PASS');
     element('file').files[0].text = async () => { throw new Error('file read failed'); };
     await vm.runInContext('runAgent()', context);
     assert.equal(vm.runInContext('busy', context), false);
-    assert.equal(element('validationMessage').textContent, 'file read failed');
+    assert.equal(element('validationMessage').textContent,
+        '設定ファイルを読み取れませんでした。ファイルが変更・移動・削除されていないか確認し、設定ファイルを選び直してください。');
     assert.match(element('result').textContent, /上部のメッセージ/);
     console.log('Repeated execution, EXPLAIN inputs, file read error recovery: PASS');
 })().catch(error => { console.error(error); process.exitCode = 1; });
