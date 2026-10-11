@@ -42,5 +42,4 @@ test-secret.properties
 *.pem
 
 test-injection.txtreview/
-
 review/
