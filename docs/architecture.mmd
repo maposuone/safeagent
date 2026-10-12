@@ -1,0 +1,19 @@
+flowchart LR
+    Browser[ブラウザ\nEXPLAIN / ANALYZE / FIX]
+    subgraph Run[Cloud Run: Java / Spring Boot]
+        Input[アップロード・入力スキャン]
+        Compare[設計書読込・設定比較]
+        Agent[Orchestrator\n説明・分析・変更候補]
+        Gateway[Safety Gateway\nPermission / Risk]
+        Approval[Human Approval\n候補選択・承認]
+        Tool[Java Tool\n作業用コピーを変更]
+        Evidence[Evidence\n再読込・値検証]
+        Audit[Audit / History]
+        Input --> Compare --> Agent --> Gateway --> Approval --> Tool --> Evidence
+        Evidence --> Audit
+    end
+    Browser --> Input
+    Agent <--> Vertex[Vertex AI\nGemini 2.5 Flash]
+    Approval <--> Browser
+    Evidence --> Browser
+    Audit --> DB[(Cloud SQL\nPostgreSQL / agent_run)]

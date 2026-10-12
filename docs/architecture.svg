@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="940" viewBox="0 0 1440 940" role="img" aria-labelledby="title desc">
+<title id="title">SafeAgent アーキテクチャ</title><desc id="desc">ブラウザ、Cloud Run、Vertex AI、Cloud SQL。入力確認、設計書比較、AI提案、安全判定、承認、変更、検証、履歴の構成。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10Z" fill="#55718d"/></marker></defs>
+<rect width="1440" height="940" fill="#f5f8fc"/>
+<style>text{font-family:Yu Gothic,Meiryo,sans-serif;fill:#173452} .title{font-size:32px;font-weight:700}.head{font-size:20px;font-weight:700}.body{font-size:16px}.small{font-size:14px}.line{fill:none;stroke:#55718d;stroke-width:2;marker-end:url(#arrow)}</style>
+<text x="40" y="53" class="title">SafeAgent | AIの提案から、承認・実行・検証まで</text>
+<text x="40" y="86" class="body">Let AI act. Keep humans in control.  /  提出版の主要構成</text>
+<rect x="40" y="130" width="260" height="145" rx="14" fill="#ffffff" stroke="#c9d8e8"/>
+<text x="60" y="164" class="head">ブラウザ</text>
+<text x="60" y="195" class="body">EXPLAIN / ANALYZE / FIX</text>
+<text x="60" y="220" class="body">設定ファイル・XLSXの選択</text>
+<text x="60" y="245" class="body">候補確認・承認・履歴表示</text>
+<rect x="335" y="120" width="765" height="675" rx="20" fill="#eaf2fc" stroke="#9dbce2"/>
+<text x="360" y="155" class="head">Cloud Run  |  Java / Spring Boot</text>
+<rect x="360" y="180" width="335" height="110" rx="14" fill="#ffffff" stroke="#c9d8e8"/>
+<text x="380" y="214" class="head">① 入力確認・スキャン</text>
+<text x="380" y="245" class="body">Secret / Prompt Injection</text>
+<text x="380" y="270" class="body">検出時はAI呼出し前に停止</text>
+<rect x="730" y="180" width="345" height="110" rx="14" fill="#ffffff" stroke="#c9d8e8"/>
+<text x="750" y="214" class="head">② 設計書読込・比較</text>
+<text x="750" y="245" class="body">Apache POI / Javaで比較</text>
+<text x="750" y="270" class="body">ANALYZE・FIX: PROD / TEST</text>
+<rect x="730" y="325" width="345" height="110" rx="14" fill="#ffffff" stroke="#c9d8e8"/>
+<text x="750" y="359" class="head">③ Orchestrator / AI連携</text>
+<text x="750" y="390" class="body">説明・分析・変更候補を生成</text>
+<text x="750" y="415" class="body">EXPLAINは設計書比較の対象外</text>
+<rect x="360" y="325" width="335" height="110" rx="14" fill="#ffffff" stroke="#c9d8e8"/>
+<text x="380" y="359" class="head">④ Safety Gateway</text>
+<text x="380" y="390" class="body">操作の許可リスト・危険度判定</text>
+<text x="380" y="415" class="body">許可 / 承認要求 / 停止</text>
+<rect x="360" y="480" width="335" height="110" rx="14" fill="#e7f7f2" stroke="#8dccb9"/>
+<text x="380" y="514" class="head">⑤ Human Approval</text>
+<text x="380" y="545" class="body">変更する項目と値を人が確認</text>
+<text x="380" y="570" class="body">AI変更は1回最大5件</text>
+<rect x="730" y="480" width="345" height="110" rx="14" fill="#ffffff" stroke="#c9d8e8"/>
+<text x="750" y="514" class="head">⑥ Java Tool</text>
+<text x="750" y="545" class="body">対象確認・バックアップ・変更</text>
+<text x="750" y="570" class="body">アップロードしたコピーを操作</text>
+<rect x="730" y="635" width="345" height="110" rx="14" fill="#e7f7f2" stroke="#8dccb9"/>
+<text x="750" y="669" class="head">⑦ Evidence</text>
+<text x="750" y="700" class="body">ファイル再読込・値の確認</text>
+<text x="750" y="725" class="body">確認成功時にVERIFIED</text>
+<rect x="360" y="635" width="335" height="110" rx="14" fill="#ffffff" stroke="#c9d8e8"/>
+<text x="380" y="669" class="head">⑧ Audit / History</text>
+<text x="380" y="700" class="body">操作ログを出力</text>
+<text x="380" y="725" class="body">runIdごとに実行結果を保存</text>
+<rect x="1140" y="325" width="260" height="135" rx="14" fill="#ffffff" stroke="#c9d8e8"/>
+<text x="1160" y="359" class="head">Vertex AI</text>
+<text x="1160" y="390" class="body">Gemini 2.5 Flash</text>
+<text x="1160" y="415" class="body">説明・分析・提案</text>
+<text x="1160" y="440" class="body">AIはToolを直接実行しない</text>
+<rect x="1140" y="635" width="260" height="135" rx="14" fill="#ffffff" stroke="#c9d8e8"/>
+<text x="1160" y="669" class="head">Cloud SQL</text>
+<text x="1160" y="700" class="body">PostgreSQL / agent_run</text>
+<text x="1160" y="725" class="body">承認・実行・Evidence状態</text>
+<text x="1160" y="750" class="body">履歴画面から確認</text>
+<path d="M300 220 H360" class="line"/>
+<path d="M695 235 H730" class="line"/>
+<path d="M900 290 V325" class="line"/>
+<path d="M730 380 H695" class="line"/>
+<path d="M527 435 V480" class="line"/>
+<path d="M695 535 H730" class="line"/>
+<path d="M900 590 V635" class="line"/>
+<path d="M730 690 H695" class="line"/>
+<path d="M1075 380 H1140" class="line"/>
+<path d="M1140 415 H1110 V425 H1075" class="line"/>
+<path d="M527 745 V780 H1120 V700 H1140" class="line"/>
+<text x="350" y="310" class="small">EXPLAIN: 比較を省略してAI連携へ</text>
+<text x="362" y="466" class="small">HIGH: 承認待ち / CRITICAL: 停止</text>
+<rect x="40" y="325" width="260" height="155" rx="14" fill="#ffffff" stroke="#c9d8e8"/>
+<text x="60" y="359" class="head">手動修正</text>
+<text x="60" y="390" class="body">設計書の項目を選択</text>
+<text x="60" y="415" class="body">変更値を編集して実行</text>
+<text x="60" y="440" class="body">Java Tool・Evidenceを利用</text>
+<path d="M300 460 H320 V610 H900 V590" class="line"/>
+<text x="40" y="825" class="head">結果: 説明・比較結果 / 変更後の検証済みファイルをブラウザに返却</text>
+<text x="40" y="862" class="body">変更対象は一時ディレクトリのコピー。利用者PCの元ファイルや稼働サーバーの設定には直接書き込みません。</text>
+<text x="40" y="896" class="small">設計書比較とAI提案は別処理です。図は主要構成を示し、段階ごとの判定・ログ処理は詳細フローに記載しています。</text>
+</svg>

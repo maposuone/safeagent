@@ -112,6 +112,14 @@ function displayValue(key, value) {
 function formatResult(data) {
     if (typeof data === 'string') return translateCode(data);
     if (!data || Object.keys(data).length === 0) return '作業履歴はまだありません。';
+    // EXPLAINの主結果はAIの説明文。比較・変更用の詳細と一緒に除外しない。
+    if ((data.requestMode || data.mode) === 'EXPLAIN'
+            && typeof data.analysisSummary === 'string'
+            && data.analysisSummary.trim()) {
+        return '設定項目の説明\n\n' + data.analysisSummary.trim()
+            + '\n\n処理状況：' + displayValue('status', data.status)
+            + '\n説明：' + (data.message || '設定変更は実行していません。');
+    }
     return Object.entries(data)
         .filter(([key]) => ![
             'savedPath', 'modifiedFileContent', 'downloadFileName',

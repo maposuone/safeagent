@@ -61,6 +61,15 @@ for (let i = 0; i < modes.length; i++) {
     assert.ok(element('modeRequirement').textContent.length > 0);
 }
 console.log('EXPLAIN / ANALYZE / FIX selection and required inputs: PASS');
+const explanation = 'Timeout\n現在の値：60\n意味：通信を待つ時間の上限です。';
+context.explainResponse = { requestMode: 'EXPLAIN', status: 'COMPLETED',
+    analysisSummary: explanation, message: '設定変更は実行していません。' };
+const explainText = vm.runInContext('formatResult(explainResponse)', context);
+assert.ok(explainText.includes(explanation), 'EXPLAIN must display the AI explanation');
+assert.ok(!explainText.includes('allowApproval'), 'Technical fields must not replace the explanation');
+context.explainResponse = { requestMode: 'EXPLAIN', status: 'BLOCKED', reason: 'SECRET_DETECTED' };
+assert.match(vm.runInContext('formatResult(explainResponse)', context), /機密情報/);
+console.log('EXPLAIN explanation and blocked result display: PASS');
 vm.runInContext("currentManualEditCandidates = [{currentValue:'original'}]; getManualEditPayload().candidates[0].currentValue = 'edited'", context);
 assert.equal(vm.runInContext('currentManualEditCandidates[0].currentValue', context), 'original');
 (async () => {
